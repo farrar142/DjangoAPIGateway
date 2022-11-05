@@ -1,0 +1,32 @@
+FROM python:3.10-alpine
+
+WORKDIR /usr/src/app
+ENV PYTHONUNBUFFERED=0
+COPY ./docker/dev/dev.requirements.txt ./dev.requirements.txt
+COPY ./requirements.txt ./requirements.txt
+COPY ./docker/dev/run.sh ./run.sh
+
+
+RUN apk update
+##development
+# RUN mkdir ~/.aws
+# COPY ./docker/dev/.aws/config /root/.aws/credentials
+RUN apk add py3-autopep8 docker docker-compose git openssh
+RUN apk add openrc --no-cache
+RUN rc-update add docker boot
+RUN adduser -u 1000 -G docker -h /home/docker -D docker
+##git submodule clone
+# COPY .git .git
+# COPY .gitmodules .gitmodules
+# RUN mkdir common_module
+# RUN git submodule init
+# RUN git submodule update
+##dependeencies
+RUN apk add --virtual build-deps gcc python3-dev musl-dev libc-dev libffi-dev\
+    && apk add --no-cache mariadb-dev\
+    # && apk add postgresql-dev geos gdal\
+    && apk add jpeg-dev zlib-dev libjpeg
+# RUN service docker restart && addgroup username docker
+# RUN pip3 install -r common_module/requirements.txt
+RUN pip3 install -r dev.requirements.txt
+RUN apk del build-deps

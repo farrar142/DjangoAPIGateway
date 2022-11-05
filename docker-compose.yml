@@ -1,0 +1,54 @@
+# redis-server.yml
+version: '3.7'
+services:
+  dev:
+    build:
+      dockerfile: docker/dev/dockerfile
+      context: .
+    command: tail -f /dev/null
+    # command: "python3 manage.py runserver 0.0.0.0:8000"
+    # command: 'sh docker/dev/run.sh'
+    container_name: ${CONTAINER_NAME}
+    hostname: root
+    volumes:
+      - .:/usr/src/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - '${PORT}:8000'
+    restart: unless-stopped
+    working_dir: /usr/src/app
+    environment:
+      TZ: 'Asia/Seoul'
+  build:
+    build:
+      dockerfile: docker/deploy/build.dockerfile
+      context: .
+    image: ${CONTAINER_NAME}:build
+    container_name: ${CONTAINER_NAME}_build
+    hostname: root
+    working_dir: /usr/src/app
+    environment:
+      TZ: 'Asia/Seoul'
+  deploy:
+    build:
+      dockerfile: docker/deploy/dockerfile
+      context: .
+      args:
+        CONTAINER_NAME: ${CONTAINER_NAME}
+    command: 'sh docker/deploy/run.sh'
+    container_name: ${CONTAINER_NAME}_deploy
+    hostname: root
+    volumes:
+      - /var/run/celery:/var/run
+      - /docker_projects/nginx__1/data/${CONTAINER_NAME}:/tmp/uwsgi
+    ports:
+      - '${PORT}:8000'
+    restart: unless-stopped
+    working_dir: /usr/src/app
+    environment:
+      TZ: 'Asia/Seoul'
+
+networks:
+  default:
+    external:
+      name: runthe_backend_default
