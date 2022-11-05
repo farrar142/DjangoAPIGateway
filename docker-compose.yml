@@ -26,6 +26,7 @@ services:
     image: ${CONTAINER_NAME}:build
     container_name: ${CONTAINER_NAME}_build
     hostname: root
+      - /docker_projects/nginx__1/data/${CONTAINER_NAME}/static:/usr/src/app/static
     working_dir: /usr/src/app
     environment:
       TZ: 'Asia/Seoul'
