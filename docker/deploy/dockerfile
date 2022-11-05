@@ -4,6 +4,7 @@ USER root
 WORKDIR /usr/src/app
 ENV PYTHONUNBUFFERED=0
 COPY . .
+RUN echo yes | python3 manage.py collectstatic
 ##uwsgi.sock
 RUN mkdir /tmp/uwsgi
 ##aws

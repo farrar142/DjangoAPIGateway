@@ -11,4 +11,3 @@ RUN apk add --virtual build-deps gcc python3-dev musl-dev libc-dev libffi-dev\
     && apk add jpeg-dev zlib-dev libjpeg
 RUN pip3 install -r requirements.txt
 RUN apk del build-deps
-RUN echo yes | python3 manage.py collectstatic
