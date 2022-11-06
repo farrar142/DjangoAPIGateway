@@ -28,17 +28,30 @@ class Consumer(models.Model):
 
 
 class Api(models.Model):
+    SCHEME_DELIMETER = "://"
     PLUGIN_CHOICE_LIST = (
         (0, 'Remote auth'),
         (1, 'Basic auth'),
         (2, 'Key auth'),
         (3, 'Server auth')
     )
+
+    class SchemeType(models.TextChoices):
+        HTTP = "http"
+        HTTPS = "https"
+        UNITX = "unix"
+
     name = models.CharField(max_length=128, unique=True)
     request_path = models.CharField(max_length=255)
+    scheme = models.CharField(
+        max_length=64, choices=SchemeType.choices, default=SchemeType.HTTPS)
     upstream_url = models.CharField(max_length=255)
     plugin = models.IntegerField(choices=PLUGIN_CHOICE_LIST, default=0)
     consumers = models.ManyToManyField(Consumer, blank=True)
+
+    @property
+    def upstream(self):
+        return self.scheme + "://" + self.upstream_url
 
     def check_plugin(self, request: HttpRequest):
         if self.plugin == 0:
@@ -79,14 +92,13 @@ class Api(models.Model):
         if self.plugin != 1 and request.META.get('HTTP_AUTHORIZATION'):
             headers['Authorization'] = request.META.get('HTTP_AUTHORIZATION')
         # headers['content-type'] = request.content_type
-        print("send_request")
         """
         요청 http://localhost:9000/programs/1/data/
         strip = /service/programs
         full_path = /programs/1/data/
         """
         full_path = request.get_full_path()[len(self.request_path)+1:]
-        url = self.upstream_url + full_path
+        url = self.upstream + full_path
         method = request.method or 'get'
         method = method.lower()
         method_map = {
