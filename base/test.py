@@ -104,12 +104,12 @@ class Client(_Client):
 class TestCase(_TestCase):
     client_class = Client
     client: Client
-    user: User
-    username = "gksdjf1690"
-    password = "test"
-    email = "gksdjf1690@gmail.com"
+    # user: User
+    # username = "gksdjf1690"
+    # password = "test"
+    # email = "gksdjf1690@gmail.com"
 
-    def setUp(self):
-        super().setUp()
-        self.user = User.objects.create(
-            username=self.username, password=make_password(self.password), email=self.email)
+    # def setUp(self):
+    #     super().setUp()
+    #     self.user = User.objects.create(
+    #         username=self.username, password=make_password(self.password), email=self.email)

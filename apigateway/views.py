@@ -1,5 +1,6 @@
 import requests
 from django.shortcuts import render
+from django.core.cache import cache
 from django.http import HttpResponse
 from django.http.request import HttpRequest
 from rest_framework.response import Response
@@ -16,16 +17,23 @@ class gateway(APIView):
         print(f"{request.path_info=}")
         if len(path) < 2:
             return Response('bad request', status=status.HTTP_400_BAD_REQUEST)
+        api_name = path[1]
+        api_cache: Api = cache.get(f"api/{api_name}")
+        if api_cache:
+            print("get from cache")
+        if not api_cache:
+            apimodel = Api.objects.filter(name=api_name).first()
+            if apimodel is None:
+                return Response('bad request', status=status.HTTP_400_BAD_REQUEST)
+            print("set cache")
+            cache.set(f"api/{api_name}", apimodel)
+            api_cache = apimodel
 
-        apimodel = Api.objects.filter(name=path[1]).first()
-        if apimodel is None:
-            return Response('bad request', status=status.HTTP_400_BAD_REQUEST)
-
-        valid, msg = apimodel.check_plugin(request)
+        valid, msg = api_cache.check_plugin(request)
         if not valid:
             return Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
-        res = apimodel.send_request(request)
+        res = api_cache.send_request(request)
         if res.headers.get('Content-Type', '').lower() == 'application/json':
             data = res.json()
         else:
