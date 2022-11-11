@@ -5,9 +5,9 @@ django-ninja
 django-cors-headers
 requests
 requests_unixsocket
-orjson
 unidecode
 websockets
+psycopg2-binary
 
 django-redis
 django-celery-results
@@ -21,7 +21,6 @@ celery==5.2.3
 redis
 gunicorn
 uvicorn
-uwsgi
 
 django-ninja-jwt
 python-jose[cryptography]

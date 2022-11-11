@@ -12,20 +12,27 @@ from rest_framework.authentication import get_authorization_header, BasicAuthent
 from rest_framework import HTTP_HEADER_ENCODING
 from rest_framework.request import Request
 
-from accounts.models import User
+from common_module.authentication import ThirdPartyAuthentication
 
 # Create your models here.
 
 
 class Consumer(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user_id = models.IntegerField()
     apikey = models.CharField(max_length=32)
 
     def __unicode__(self):
-        return self.user.username
+        return self.user_id
 
     def __str__(self):
-        return self.user.username
+        return self.user_id
+
+
+class Upstream(models.Model):
+    host = models.CharField(max_length=255)
+
+    def toString(self):
+        return self.host
 
 
 class Api(models.Model):
@@ -44,18 +51,20 @@ class Api(models.Model):
 
     name = models.CharField(max_length=128, unique=True)
     request_path = models.CharField(max_length=255)
+    wrapped_path = models.CharField(max_length=255)
     scheme = models.CharField(
         max_length=64, choices=SchemeType.choices, default=SchemeType.HTTPS)
-    upstream_url = models.CharField(max_length=255)
+    upstream = models.ForeignKey(Upstream, on_delete=models.CASCADE)
     plugin = models.IntegerField(choices=PLUGIN_CHOICE_LIST, default=0)
     consumers = models.ManyToManyField(Consumer, blank=True)
 
     @property
-    def upstream(self):
-        return self.scheme + "://" + self.upstream_url
+    def full_path(self):
+        return self.scheme + "://" + self.upstream.toString() + "/" + self.wrapped_path
 
     def check_plugin(self, request: HttpRequest):
         if self.plugin == 0:
+            auth = ThirdPartyAuthentication()
             return True, ''
 
         elif self.plugin == 1:
@@ -90,8 +99,10 @@ class Api(models.Model):
 
     def send_request(self, request: HttpRequest) -> requests.Response:
         headers = {}
-        if self.plugin != 1 and request.META.get('HTTP_AUTHORIZATION'):
-            headers['Authorization'] = request.META.get('HTTP_AUTHORIZATION')
+        # if self.plugin != 1 and request.META.get('HTTP_AUTHORIZATION'):
+        headers['Authorization'] = request.META.get(
+            'HTTP_AUTHORIZATION')
+        print(headers)
         # headers['content-type'] = request.content_type
         """
         요청 http://localhost:9000/programs/1/data/
@@ -99,9 +110,10 @@ class Api(models.Model):
         full_path = /programs/1/data/
         """
         full_path = request.get_full_path()[len(self.request_path)+1:]
-        url = self.upstream + full_path
+        url = self.full_path+full_path
         method = request.method or 'get'
         method = method.lower()
+        print(f"{url=}")
         method_map = {
             'get': requests.get,
             'post': requests.post,

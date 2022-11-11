@@ -10,10 +10,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 import os
+
+from glob import glob
 from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
 
+GDAL_LIBRARY_PATH = glob('/usr/lib/libgdal.so.*')[0]
+GEOS_LIBRARY_PATH = glob('/usr/lib/libgeos_c.so.*')[0]
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,7 +26,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-g)*y0n*^0k*xy+e2k7i#zf7ymw_(2@kfz5dci&vi11y-=w&%=q'
+SECRET_KEY = '^1&-1g777lqae@9kd^-e997w6d1vtzi&_)e+l^#$@98l@gmg2b'
+# SECRET_KEY = 'django-insecure-g)*y0n*^0k*xy+e2k7i#zf7ymw_(2@kfz5dci&vi11y-=w&%=q'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 IS_DEBUG = os.getenv("DEBUG", None)
@@ -40,7 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'accounts',
     'apigateway',
     'rest_framework',
 ]
@@ -80,26 +84,29 @@ ASGI_APPLICATION = "base.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-
+DB_ENGINE = os.getenv('DB_ENGINE', 'django.db.backends.mysql')
+DB_OPTIONS = {} if DB_ENGINE.find('postgis') else {
+    'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+    'charset': 'utf8mb4',
+    'use_unicode': True,
+}
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': DB_ENGINE,
         'NAME': os.getenv("DB_NAME"),
         'USER': os.getenv("DB_USER"),
         'PASSWORD': os.getenv("DB_PASSWORD"),
         'HOST': os.getenv("DB_HOST"),
         'PORT': os.getenv("DB_PORT"),
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',
-            'use_unicode': True,
-        },
+        'OPTIONS': DB_OPTIONS,
         'TEST': {
             'NAME': 'auth_test',
             'MIRROR': 'default'
         }
     },
 }
+
+
 REDIS_HOST = os.getenv("REDIS_HOST", None)
 
 CHANNEL_LAYERS = {
@@ -116,8 +123,6 @@ CHANNEL_LAYERS = {
         },
     },
 }
-
-AUTH_USER_MODEL = 'accounts.User'
 
 
 # Password validation

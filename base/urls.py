@@ -16,10 +16,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include, re_path
 # from django.conf.urls import url
-from accounts.api import auth
 from apigateway.views import gateway
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('auth/', auth.urls),
     re_path(r'.*', gateway.as_view()),
 ]

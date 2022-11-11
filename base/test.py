@@ -1,33 +1,21 @@
 import json
 
-from django.contrib.auth.hashers import make_password
+from django.core.handlers.wsgi import WSGIRequest
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AnonymousUser
-from django.test.client import Client as _Client
-from django.db.models import QuerySet
 
-from django.test import TestCase as _TestCase
+from rest_framework.test import APIClient
+from rest_framework.test import APITestCase
 
-
-from accounts.models import User
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
-class Client(_Client):
-    header = {}
-
-    def credentials(self, **kwargs):
-        self.header = {**kwargs}
-
-    def authorize(self, user: User):
-        token = user.make_token()
+class Client(APIClient):
+    def login(self, user):
+        token = str(RefreshToken.for_user(user).access_token)
         self.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
-    def expired(self, user: User):
-        token = User.expired_token(user.pk)
-        self.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-
-    def not_validated_token(self):
-        self.credentials(HTTP_AUTHORIZATION="Bearer nonvalidatedtoken")
+    def wrong_login(self):
+        self.credentials(HTTP_AUTHORIZATION='Bearer dawdawdw')
 
     def logout(self):
         self.credentials()
@@ -36,6 +24,7 @@ class Client(_Client):
         self,
         path,
         data=None,
+        format=None,
         content_type='application/json',
         follow=False,
         **extra,
@@ -43,73 +32,50 @@ class Client(_Client):
         if content_type == 'application/json':
             data = json.dumps(data)
         return super(Client, self).post(
-            path, data, content_type, follow, **extra, **self.header
-        )
-
-    def put(
-        self,
-        path,
-        data=None,
-        content_type='application/json',
-        follow=False,
-        **extra,
-    ):
-        if content_type == 'application/json':
-            data = json.dumps(data)
-        return super(Client, self).put(
-            path,
-            data,
-            content_type,
-            follow,
-            **extra, **self.header
+            path, data, format, content_type, follow, **extra
         )
 
     def patch(
         self,
         path,
         data=None,
+        format=None,
         content_type='application/json',
         follow=False,
         **extra,
-    ):
+    ) -> WSGIRequest:
         if content_type == 'application/json':
             data = json.dumps(data)
         return super(Client, self).patch(
             path,
             data,
+            format,
             content_type,
             follow,
-            **extra, **self.header
+            **extra,
         )
 
     def delete(
         self,
         path,
         data=None,
+        format=None,
         content_type='application/json',
         follow=False,
         **extra,
-    ):
+    ) -> WSGIRequest:
         if content_type == 'application/json':
             data = json.dumps(data)
         return super(Client, self).delete(
             path,
             data,
+            format,
             content_type,
             follow,
-            **extra, **self.header
+            **extra,
         )
 
 
-class TestCase(_TestCase):
+class TestCase(APITestCase):
+    # client:Client
     client_class = Client
-    client: Client
-    # user: User
-    # username = "gksdjf1690"
-    # password = "test"
-    # email = "gksdjf1690@gmail.com"
-
-    # def setUp(self):
-    #     super().setUp()
-    #     self.user = User.objects.create(
-    #         username=self.username, password=make_password(self.password), email=self.email)
