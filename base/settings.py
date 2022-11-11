@@ -74,6 +74,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'base.wsgi.application'
+ASGI_APPLICATION = "base.asgi.application"
 
 
 # Database
@@ -97,6 +98,22 @@ DATABASES = {
             'NAME': 'auth_test',
             'MIRROR': 'default'
         }
+    },
+}
+REDIS_HOST = os.getenv("REDIS_HOST", None)
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(REDIS_HOST)],
+        },
+    },
+    'notify': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(REDIS_HOST)],
+        },
     },
 }
 

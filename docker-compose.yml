@@ -13,6 +13,7 @@ services:
     volumes:
       - .:/usr/src/app
       - /var/run/docker.sock:/var/run/docker.sock
+      - /var/uwsgi/sock:/tmp/sock
     ports:
       - '${PORT}:8000'
     restart: unless-stopped
@@ -27,6 +28,8 @@ services:
     container_name: ${CONTAINER_NAME}_build
     hostname: root
     working_dir: /usr/src/app
+    volumes:
+      - /var/uwsgi/sock:/var/run
     environment:
       TZ: 'Asia/Seoul'
   deploy:

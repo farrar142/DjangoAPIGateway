@@ -1,4 +1,5 @@
 import requests
+import requests_unixsocket
 import json
 
 from typing import Optional
@@ -39,7 +40,7 @@ class Api(models.Model):
     class SchemeType(models.TextChoices):
         HTTP = "http"
         HTTPS = "https"
-        UNITX = "unix"
+        UNITX = "http+unix"
 
     name = models.CharField(max_length=128, unique=True)
     request_path = models.CharField(max_length=255)
@@ -117,7 +118,20 @@ class Api(models.Model):
             headers['content-type'] = request.content_type
         else:
             data = request.data
-
+        if self.scheme == "http+unix":
+            print("send unix requests", url)
+            unix_session = requests_unixsocket.Session()
+            unix_map = {
+                'get': unix_session.get,
+                'post': unix_session.post,
+                'patch': unix_session.patch,
+                "delete": unix_session.delete,
+                'put': unix_session.put,
+            }
+            res = unix_map[method](url, headers=headers,
+                                   data=data, files=request.FILES)
+            unix_session.close()
+            return res
         return method_map[method](url, headers=headers, data=data, files=request.FILES)
 
     def __unicode__(self):

@@ -18,16 +18,20 @@ class gateway(APIView):
         if len(path) < 2:
             return Response('bad request', status=status.HTTP_400_BAD_REQUEST)
         api_name = path[1]
-        api_cache: Api = cache.get(f"api/{api_name}")
-        if api_cache:
-            print("get from cache")
+        print(f"{api_name=}")
+        api_cache = Api.objects.filter(name=api_name).first()
         if not api_cache:
-            apimodel = Api.objects.filter(name=api_name).first()
-            if apimodel is None:
-                return Response('bad request', status=status.HTTP_400_BAD_REQUEST)
-            print("set cache")
-            cache.set(f"api/{api_name}", apimodel)
-            api_cache = apimodel
+            return Response('bad request', status=status.HTTP_400_BAD_REQUEST)
+        # api_cache: Api = cache.get(f"api/{api_name}")
+        # if api_cache:
+        #     print("get from cache")
+        # if not api_cache:
+        #     apimodel = Api.objects.filter(name=api_name).first()
+        #     if apimodel is None:
+        #         return Response('bad request', status=status.HTTP_400_BAD_REQUEST)
+        #     print("set cache")
+        #     cache.set(f"api/{api_name}", apimodel)
+        #     api_cache = apimodel
 
         valid, msg = api_cache.check_plugin(request)
         if not valid:

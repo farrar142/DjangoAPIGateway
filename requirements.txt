@@ -4,15 +4,23 @@ pillow
 django-ninja
 django-cors-headers
 requests
+requests_unixsocket
 orjson
+unidecode
+websockets
 
 django-redis
 django-celery-results
 django-celery-beat
 
+django-channels
+channels
+channels_redis
+
 celery==5.2.3
 redis
 gunicorn
+uvicorn
 uwsgi
 
 django-ninja-jwt

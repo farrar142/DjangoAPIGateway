@@ -43,6 +43,12 @@ class TestApiGateway(TestCase):
 
         start = time.perf_counter()
         requests.get(
-            "https://honeycombpizza.link/nearby/?latitude=37.48764750944954&longitude=127.02528032814617&filter_simple_location=서초동,남부순환로,효령로68길,강남대로")
+            "https://test.palzakspot.com/nearby/?latitude=37.48764750944954&longitude=127.02528032814617&filter_simple_location=서초동,남부순환로,효령로68길,강남대로")
+        elapsed = time.perf_counter()-start
+        print(f"{elapsed=}")
+
+        start = time.perf_counter()
+        requests.get(
+            "https://test.palzakspot.com/nearby/?latitude=37.48764750944954&longitude=127.02528032814617&filter_simple_location=서초동,남부순환로,효령로68길,강남대로")
         elapsed = time.perf_counter()-start
         print(f"{elapsed=}")
