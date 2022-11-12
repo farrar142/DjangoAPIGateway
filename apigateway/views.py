@@ -1,25 +1,38 @@
 import requests
-from django.shortcuts import render
-from django.core.cache import cache
-from django.http import HttpResponse
+from typing import Generic, Optional
+from django.db.models import F, Value, QuerySet
 from django.http.request import HttpRequest
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
+from common_module.caches import UseCache
+from common_module.mixins import MockRequest
 from .models import Api
 
 
 class gateway(APIView):
     authentication_classes = ()
+    cache = UseCache(0, "api", Api)
 
-    def operation(self, request: HttpRequest):
+    def operation(self, request: MockRequest):
         path = request.path_info.split('/')
-        print(f"{request.path_info=}")
         if len(path) < 2:
             return Response('bad request', status=status.HTTP_400_BAD_REQUEST)
-        api_name = path[1]
-        print(f"{api_name=}")
-        api_cache = Api.objects.filter(name=api_name).first()
+
+        api_cache = self.cache.get(path=request.path_info)
+
+        if not api_cache:
+            api_caches: QuerySet[Api] = Api.objects.prefetch_related("upstream").annotate(
+                search_path=Value(request.path_info)
+            ).filter(
+                search_path__startswith=F('request_path')
+            )
+            api_cache = api_caches.first()
+            if api_cache:
+                self.cache.set(api_cache)
+
+        # api_cache = Api.objects.filter(name=(api_name)).first()
         if not api_cache:
             return Response('bad request', status=status.HTTP_400_BAD_REQUEST)
         # api_cache: Api = cache.get(f"api/{api_name}")

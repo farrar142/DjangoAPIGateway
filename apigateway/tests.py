@@ -20,16 +20,16 @@ class TestApiGateway(TestCase):
         )
         self.auth = Api.objects.create(
             name="auth",
-            request_path="auth",
-            wrapped_path="auth",
+            request_path="/auth",
+            wrapped_path="/auth",
             scheme=SCHEME,
             upstream=self.auth_upstream,
             plugin=0
         )
         self.auth = Api.objects.create(
             name="users",
-            request_path="users",
-            wrapped_path="users",
+            request_path="/users/me",
+            wrapped_path="/users/me",
             scheme=SCHEME,
             upstream=self.auth_upstream,
             plugin=0
@@ -47,4 +47,5 @@ class TestApiGateway(TestCase):
         resp = self.client.get("/users/me/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
-        print(resp.json())
+        request_url = "admin/users/1/activities"
+        wrapped_path = "admin/users"
