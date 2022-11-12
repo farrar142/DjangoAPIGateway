@@ -13,6 +13,7 @@ from rest_framework import HTTP_HEADER_ENCODING
 from rest_framework.request import Request
 
 from common_module.authentication import ThirdPartyAuthentication
+from common_module.mixins import MockRequest
 
 # Create your models here.
 
@@ -33,6 +34,12 @@ class Upstream(models.Model):
 
     def toString(self):
         return self.host
+
+
+"""
+0=서버에 인증 유보
+1=게이트웨이 인증
+"""
 
 
 class Api(models.Model):
@@ -58,11 +65,32 @@ class Api(models.Model):
     plugin = models.IntegerField(choices=PLUGIN_CHOICE_LIST, default=0)
     consumers = models.ManyToManyField(Consumer, blank=True)
 
+    method_map = {
+        'get': requests.get,
+        'post': requests.post,
+        'put': requests.put,
+        'patch': requests.patch,
+        'delete': requests.delete
+    }
+    unix_session: requests_unixsocket.Session
+
+    @property
+    def unix_map(self):
+        unix_session = requests_unixsocket.Session()
+        self.unix_session = unix_session
+        return {
+            'get': unix_session.get,
+            'post': unix_session.post,
+            'patch': unix_session.patch,
+            "delete": unix_session.delete,
+            'put': unix_session.put,
+        }
+
     @property
     def full_path(self):
-        return self.scheme + "://" + self.upstream.toString() + "/" + self.wrapped_path
+        return self.scheme + "://" + self.upstream.toString() + self.wrapped_path
 
-    def check_plugin(self, request: HttpRequest):
+    def check_plugin(self, request: MockRequest):
         if self.plugin == 0:
             auth = ThirdPartyAuthentication()
             return True, ''
@@ -97,57 +125,44 @@ class Api(models.Model):
             raise NotImplementedError(
                 "plugin %d not implemented" % self.plugin)
 
-    def send_request(self, request: HttpRequest) -> requests.Response:
+    def send_request(self, request: MockRequest) -> requests.Response:
         headers = {}
         # if self.plugin != 1 and request.META.get('HTTP_AUTHORIZATION'):
         headers['Authorization'] = request.META.get(
             'HTTP_AUTHORIZATION')
-        print(headers)
         # headers['content-type'] = request.content_type
         """
         요청 http://localhost:9000/programs/1/data/
         strip = /service/programs
         full_path = /programs/1/data/
         """
-        full_path = request.get_full_path()[len(self.request_path)+1:]
-        url = self.full_path+full_path
+        trailing_path = request.get_full_path().removeprefix(self.request_path)
+        url = self.full_path+trailing_path
         method = request.method or 'get'
         method = method.lower()
-        print(f"{url=}")
-        method_map = {
-            'get': requests.get,
-            'post': requests.post,
-            'put': requests.put,
-            'patch': requests.patch,
-            'delete': requests.delete
-        }
 
-        for k, v in request.FILES.items():
-            request.data.pop(k)
+        if request.FILES is not None and isinstance(request.FILES, dict):
+            for k, v in request.FILES.items():
+                request.data.pop(k)
 
         if request.content_type and request.content_type.lower() == 'application/json':
             data = json.dumps(request.data)
             headers['content-type'] = request.content_type
         else:
             data = request.data
+
         if self.scheme == "http+unix":
-            print("send unix requests", url)
-            unix_session = requests_unixsocket.Session()
-            unix_map = {
-                'get': unix_session.get,
-                'post': unix_session.post,
-                'patch': unix_session.patch,
-                "delete": unix_session.delete,
-                'put': unix_session.put,
-            }
-            res = unix_map[method](url, headers=headers,
-                                   data=data, files=request.FILES)
-            unix_session.close()
+            res = self.unix_map[method](url, headers=headers,
+                                        data=data, files=request.FILES)
+            self.unix_session.close()
             return res
-        return method_map[method](url, headers=headers, data=data, files=request.FILES)
+        return self.method_map[method](url, headers=headers, data=data, files=request.FILES)
 
     def __unicode__(self):
         return self.name
 
     def __str__(self):
         return self.name
+
+    def get(self, __name: str):
+        return self.__getattribute__(__name)
