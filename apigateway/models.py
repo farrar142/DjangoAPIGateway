@@ -35,6 +35,9 @@ class Upstream(models.Model):
     def toString(self):
         return self.host
 
+    def __str__(self):
+        return f"{self.host}"
+
 
 """
 0=서버에 인증 유보
