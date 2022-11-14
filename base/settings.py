@@ -14,6 +14,7 @@ import os
 from glob import glob
 from pathlib import Path
 from dotenv import load_dotenv
+from common_module.settings import SECRET_KEY
 load_dotenv()
 
 GDAL_LIBRARY_PATH = glob('/usr/lib/libgdal.so.*')[0]
@@ -26,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '^1&-1g777lqae@9kd^-e997w6d1vtzi&_)e+l^#$@98l@gmg2b'
+SECRET_KEY = SECRET_KEY
 # SECRET_KEY = 'django-insecure-g)*y0n*^0k*xy+e2k7i#zf7ymw_(2@kfz5dci&vi11y-=w&%=q'
 
 # SECURITY WARNING: don't run with debug turned on in production!
