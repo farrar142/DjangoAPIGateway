@@ -42,8 +42,8 @@ services:
     hostname: root
     volumes:
       - /var/run/celery:/var/run
-      - /docker_projects/nginx__1/data/${CONTAINER_NAME}:/tmp/uwsgi
-      - /docker_projects/nginx__1/data/${CONTAINER_NAME}/static:/usr/src/app/static
+      - /home/${USER}/nginx/data/runthe_backend/${CONTAINER_NAME}:/tmp/runthe_backend
+      - /home/${USER}/nginx/data/runthe_backend/${CONTAINER_NAME}/static:/usr/src/app/static
     ports:
       - '${PORT}:8000'
     restart: unless-stopped

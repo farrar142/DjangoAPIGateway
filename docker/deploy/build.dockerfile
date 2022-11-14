@@ -2,7 +2,7 @@ FROM python:3.10-alpine
 
 WORKDIR /usr/src/app
 ENV PYTHONUNBUFFERED=0
-COPY requirements.txt requirements.txt
+COPY common_module/requirements.txt requirements.txt
 
 RUN apk update
 ##dependeencies
