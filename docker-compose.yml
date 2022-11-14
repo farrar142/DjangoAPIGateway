@@ -27,8 +27,6 @@ services:
     container_name: ${CONTAINER_NAME}_build
     hostname: root
     working_dir: /usr/src/app
-    volumes:
-      - /var/uwsgi/sock:/var/run
     environment:
       TZ: 'Asia/Seoul'
   deploy:
