@@ -6,7 +6,6 @@ ENV PYTHONUNBUFFERED=0
 COPY . .
 ##uwsgi.sock
 RUN mkdir /tmp/uwsgi
-RUN pip install uwsgi
 ##aws
 # RUN mkdir ~/.aws
 # COPY ./docker/deploy/.aws/config /root/.aws/credentials
