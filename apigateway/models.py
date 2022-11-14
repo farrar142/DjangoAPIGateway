@@ -2,7 +2,7 @@ import requests
 import requests_unixsocket
 import json
 
-from typing import Optional
+from typing import Any, Optional, Self, Type
 
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser
@@ -13,6 +13,7 @@ from rest_framework import HTTP_HEADER_ENCODING
 from rest_framework.request import Request
 
 from common_module.authentication import ThirdPartyAuthentication
+from common_module.caches import UseSingleCache
 from common_module.mixins import MockRequest
 
 # Create your models here.
@@ -46,6 +47,8 @@ class Upstream(models.Model):
 
 
 class Api(models.Model):
+    cache: UseSingleCache[Type[Self]] = UseSingleCache(0, 'api')
+
     SCHEME_DELIMETER = "://"
     PLUGIN_CHOICE_LIST = (
         (0, 'Remote auth'),
@@ -160,6 +163,20 @@ class Api(models.Model):
             self.unix_session.close()
             return res
         return self.method_map[method](url, headers=headers, data=data, files=request.FILES)
+
+    def save(self, *args, **kwargs):
+        instance = super().save(*args, **kwargs)
+        keys = Api.cache.get_global_keys()
+        for key in keys:
+            Api.cache.purge_global_keys(key)
+        return instance
+
+    def delete(self, using: Any = ..., keep_parents: bool = ...) -> tuple[int, dict[str, int]]:
+        deleted = super().delete(using, keep_parents)
+        keys = Api.cache.get_global_keys()
+        for key in keys:
+            Api.cache.purge_global_keys(key)
+        return deleted
 
     def __unicode__(self):
         return self.name
