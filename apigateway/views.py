@@ -1,19 +1,43 @@
 import requests
-from typing import Generic, Optional
+from typing import Generic, Optional, List
 from django.db.models import F, Value, QuerySet
 from django.http.request import HttpRequest
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
-from common_module.caches import UseCache
+from common_module.caches import UseSingleCache
 from common_module.mixins import MockRequest
 from .models import Api
+
+# from ninja import NinjaAPI, Router
+
+# api = NinjaAPI()
+
+# router = Router()
+
+# inner = Router()
+
+
+# @router.get("/test")
+# class Test:
+#     string = "test"
+
+#     def __init__(self, request):
+#         print("add router")
+#         return
+
+#     def __call__(self, request):
+#         return
+
+#     @inner.get("test")
+#     def test(self, request):
+#         return 'test'
 
 
 class gateway(APIView):
     authentication_classes = ()
-    cache = UseCache(0, "api", Api)
+    cache: UseSingleCache[Api] = UseSingleCache(0, "api")
 
     def operation(self, request: MockRequest):
         path = request.path_info.split('/')
@@ -71,3 +95,7 @@ class gateway(APIView):
 
     def delete(self, request):
         return self.operation(request)
+
+
+# router.add_router('/inner', inner)
+# api.add_router("/events", router)

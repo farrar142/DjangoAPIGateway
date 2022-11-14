@@ -19,5 +19,6 @@ from django.urls import path, include, re_path
 from apigateway.views import gateway
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # path('test/', api.urls),
     re_path(r'.*', gateway.as_view()),
 ]
