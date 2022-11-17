@@ -1,8 +1,7 @@
-FROM python:3.10-alpine
+FROM python:3.11-alpine
 
 WORKDIR /usr/src/app
 ENV PYTHONUNBUFFERED=0
-COPY ./docker/dev/dev.requirements.txt ./dev.requirements.txt
 COPY ./common_module/requirements.txt ./requirements.txt
 COPY ./docker/dev/run.sh ./run.sh
 
@@ -28,5 +27,5 @@ RUN apk add --virtual build-deps gcc python3-dev musl-dev libc-dev libffi-dev\
     && apk add jpeg-dev zlib-dev libjpeg
 # RUN service docker restart && addgroup username docker
 # RUN pip3 install -r common_module/requirements.txt
-RUN pip3 install -r dev.requirements.txt
+RUN pip3 install -r requirements.txt
 RUN apk del build-deps
