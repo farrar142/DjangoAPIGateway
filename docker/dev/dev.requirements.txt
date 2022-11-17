@@ -1,4 +1,3 @@
 django-extensions
-pylint-django
 autopep8
 -r requirements.txt
