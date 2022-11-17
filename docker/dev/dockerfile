@@ -3,7 +3,7 @@ FROM python:3.10-alpine
 WORKDIR /usr/src/app
 ENV PYTHONUNBUFFERED=0
 COPY ./docker/dev/dev.requirements.txt ./dev.requirements.txt
-COPY ./requirements.txt ./requirements.txt
+COPY ./common_module/requirements.txt ./requirements.txt
 COPY ./docker/dev/run.sh ./run.sh
 
 
