@@ -127,6 +127,7 @@ class Api(models.Model):
             auth = InternalJWTAuthentication()
             token, _ = auth.authenticate(request)
             if not isinstance(token,AnonymousUser):
+                print(f"{token.get('role')=}")
                 if 'admin' in  token.get("role"):            
                     return True, ''
             return False, 'permission not allowed'
