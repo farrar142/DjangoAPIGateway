@@ -5,14 +5,14 @@ import json
 from typing import Any, Optional, Self, Type
 
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser
+from django.contrib.auth.models import AbstractBaseUser,AnonymousUser
 from django.http.request import HttpRequest
 
 from rest_framework.authentication import get_authorization_header, BasicAuthentication
 from rest_framework import HTTP_HEADER_ENCODING
 from rest_framework.request import Request
 
-from common_module.authentication import ThirdPartyAuthentication
+from common_module.authentication import ThirdPartyAuthentication,InternalJWTAuthentication
 from common_module.caches import UseSingleCache
 from common_module.mixins import MockRequest
 
@@ -124,10 +124,11 @@ class Api(models.Model):
                 return True, ''
             return False, 'apikey need'
         elif self.plugin == 3:
-            auth = ThirdPartyAuthentication()
+            auth = InternalJWTAuthentication()
             token, _ = auth.authenticate(request)
-            if 'admin' in  token.get("role"):            
-                return True, ''
+            if not isinstance(token,AnonymousUser):
+                if 'admin' in  token.get("role"):            
+                    return True, ''
             return False, 'permission not allowed'
         else:
             raise NotImplementedError(
