@@ -130,6 +130,7 @@ class Api(models.Model):
                 print(f"{token.get('role')=}")
                 if 'admin' in  token.get("role"):            
                     return True, ''
+                print(f"{token=}")
             return False, 'permission not allowed'
         else:
             raise NotImplementedError(
