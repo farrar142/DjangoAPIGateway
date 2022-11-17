@@ -54,10 +54,10 @@ class Api(models.Model):
 
     SCHEME_DELIMETER = "://"
     PLUGIN_CHOICE_LIST = (
-        (0, 'Remote auth'),
+        (0, '토큰을 검사하지 않습니다'),
         (1, 'Basic auth'),
         (2, 'Key auth'),
-        (3, 'Server auth')
+        (3, '게이트웨이에서 토큰을 검사합니다. 어드민 만 접근가능합니다.')
     )
 
     class SchemeType(models.TextChoices):
@@ -101,7 +101,6 @@ class Api(models.Model):
 
     def check_plugin(self, request: MockRequest):
         if self.plugin == 0:
-            auth = ThirdPartyAuthentication()
             return True, ''
 
         elif self.plugin == 1:
@@ -125,11 +124,11 @@ class Api(models.Model):
                 return True, ''
             return False, 'apikey need'
         elif self.plugin == 3:
-            consumer = self.consumers.all()
-            if not consumer.exists():
-                return False, 'consumer need'
-            request.META['HTTP_AUTHORIZATION'] = "#FIXME"
-            return True, ''
+            auth = ThirdPartyAuthentication()
+            token, _ = auth.authenticate(request)
+            if 'admin' in  token.get("role"):            
+                return True, ''
+            return False, 'permission not allowed'
         else:
             raise NotImplementedError(
                 "plugin %d not implemented" % self.plugin)
