@@ -168,3 +168,5 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 ALLOWED_HOSTS = ['*']
 STATIC_ROOT = "static/"
+
+LOGIN_URL = '/gateway/'

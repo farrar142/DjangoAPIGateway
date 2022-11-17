@@ -32,12 +32,15 @@ class Consumer(models.Model):
 
 class Upstream(models.Model):
     host = models.CharField(max_length=255)
+    alias= models.CharField(max_length=64,default="")
 
     def toString(self):
         return self.host
 
     def __str__(self):
-        return f"{self.host}"
+        return f"{self.alias}"
+    
+    
 
 
 """
