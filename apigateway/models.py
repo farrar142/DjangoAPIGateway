@@ -191,7 +191,7 @@ class Api(models.Model):
         return self.name
 
     def __str__(self):
-        return self.name
+        return f"{self.name} : {self.upstream}/{self.request_path}"
 
     def get(self, __name: str):
         return self.__getattribute__(__name)
