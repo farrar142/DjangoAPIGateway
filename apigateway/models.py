@@ -5,14 +5,17 @@ import json
 from typing import Any, Optional, Self, Type
 
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser,AnonymousUser
+from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 from django.http.request import HttpRequest
 
 from rest_framework.authentication import get_authorization_header, BasicAuthentication
 from rest_framework import HTTP_HEADER_ENCODING
 from rest_framework.request import Request
 
-from common_module.authentication import ThirdPartyAuthentication,InternalJWTAuthentication
+from common_module.authentication import (
+    ThirdPartyAuthentication,
+    InternalJWTAuthentication,
+)
 from common_module.caches import UseSingleCache
 from common_module.mixins import MockRequest
 
@@ -32,15 +35,13 @@ class Consumer(models.Model):
 
 class Upstream(models.Model):
     host = models.CharField(max_length=255)
-    alias= models.CharField(max_length=64,default="")
+    alias = models.CharField(max_length=64, default="")
 
     def toString(self):
         return self.host
 
     def __str__(self):
         return f"{self.alias}"
-    
-    
 
 
 """
@@ -50,14 +51,14 @@ class Upstream(models.Model):
 
 
 class Api(models.Model):
-    cache: UseSingleCache[Type[Self]] = UseSingleCache(0, 'api')
+    cache: UseSingleCache[Type[Self]] = UseSingleCache(0, "api")
 
     SCHEME_DELIMETER = "://"
     PLUGIN_CHOICE_LIST = (
-        (0, '토큰을 검사하지 않습니다'),
-        (1, 'Basic auth'),
-        (2, 'Key auth'),
-        (3, '게이트웨이에서 토큰을 검사합니다. 어드민 만 접근가능합니다.')
+        (0, "토큰을 검사하지 않습니다"),
+        (1, "Basic auth"),
+        (2, "Key auth"),
+        (3, "게이트웨이에서 토큰을 검사합니다. 어드민 만 접근가능합니다."),
     )
 
     class SchemeType(models.TextChoices):
@@ -69,17 +70,18 @@ class Api(models.Model):
     request_path = models.CharField(max_length=255)
     wrapped_path = models.CharField(max_length=255)
     scheme = models.CharField(
-        max_length=64, choices=SchemeType.choices, default=SchemeType.HTTPS)
+        max_length=64, choices=SchemeType.choices, default=SchemeType.HTTPS
+    )
     upstream = models.ForeignKey(Upstream, on_delete=models.CASCADE)
     plugin = models.IntegerField(choices=PLUGIN_CHOICE_LIST, default=0)
     consumers = models.ManyToManyField(Consumer, blank=True)
 
     method_map = {
-        'get': requests.get,
-        'post': requests.post,
-        'put': requests.put,
-        'patch': requests.patch,
-        'delete': requests.delete
+        "get": requests.get,
+        "post": requests.post,
+        "put": requests.put,
+        "patch": requests.patch,
+        "delete": requests.delete,
     }
     unix_session: requests_unixsocket.Session
 
@@ -88,11 +90,11 @@ class Api(models.Model):
         unix_session = requests_unixsocket.Session()
         self.unix_session = unix_session
         return {
-            'get': unix_session.get,
-            'post': unix_session.post,
-            'patch': unix_session.patch,
+            "get": unix_session.get,
+            "post": unix_session.post,
+            "patch": unix_session.patch,
             "delete": unix_session.delete,
-            'put': unix_session.put,
+            "put": unix_session.put,
         }
 
     @property
@@ -101,7 +103,7 @@ class Api(models.Model):
 
     def check_plugin(self, request: MockRequest):
         if self.plugin == 0:
-            return True, ''
+            return True, ""
 
         elif self.plugin == 1:
             auth = BasicAuthentication()
@@ -111,34 +113,33 @@ class Api(models.Model):
                 if authenticated:
                     user, password = authenticated
             except:
-                return False, 'Authentication credentials were not provided'
+                return False, "Authentication credentials were not provided"
 
             if user and self.consumers.filter(user=user):
-                return True, ''
+                return True, ""
             else:
-                return False, 'permission not allowed'
+                return False, "permission not allowed"
         elif self.plugin == 2:
-            apikey = request.META.get('HTTP_APIKEY')
+            apikey = request.META.get("HTTP_APIKEY")
             consumers = self.consumers.filter(apikey=apikey)
             if consumers.exists():
-                return True, ''
-            return False, 'apikey need'
+                return True, ""
+            return False, "apikey need"
         elif self.plugin == 3:
             auth = InternalJWTAuthentication()
             token, _ = auth.authenticate(request)
-            if not isinstance(token,AnonymousUser):
-                if token.get("role") and 'admin' in  token.get("role"):            
-                    return True, ''
-            return False, 'permission not allowed'
+            if not isinstance(token, AnonymousUser):
+                if token.get("role") and "admin" in token.get("role"):
+                    return True, ""
+            return False, "permission not allowed"
         else:
-            raise NotImplementedError(
-                "plugin %d not implemented" % self.plugin)
+            raise NotImplementedError("plugin %d not implemented" % self.plugin)
 
     def send_request(self, request: MockRequest) -> requests.Response:
         headers = {}
         # if self.plugin != 1 and request.META.get('HTTP_AUTHORIZATION'):
-        headers['Authorization'] = request.META.get(
-            'HTTP_AUTHORIZATION')
+        headers["Authorization"] = request.META.get("HTTP_AUTHORIZATION")
+        print(f"{headers=}")
         # headers['content-type'] = request.content_type
         """
         요청 http://localhost:9000/programs/1/data/
@@ -146,26 +147,29 @@ class Api(models.Model):
         full_path = /programs/1/data/
         """
         trailing_path = request.get_full_path().removeprefix(self.request_path)
-        url = self.full_path+trailing_path
-        method = request.method or 'get'
+        url = self.full_path + trailing_path
+        method = request.method or "get"
         method = method.lower()
 
         if request.FILES is not None and isinstance(request.FILES, dict):
             for k, v in request.FILES.items():
                 request.data.pop(k)
 
-        if request.content_type and request.content_type.lower() == 'application/json':
+        if request.content_type and request.content_type.lower() == "application/json":
             data = json.dumps(request.data)
-            headers['content-type'] = request.content_type
+            headers["content-type"] = request.content_type
         else:
             data = request.data
 
         if self.scheme == "http+unix":
-            res = self.unix_map[method](url, headers=headers,
-                                        data=data, files=request.FILES)
+            res = self.unix_map[method](
+                url, headers=headers, data=data, files=request.FILES
+            )
             self.unix_session.close()
             return res
-        return self.method_map[method](url, headers=headers, data=data, files=request.FILES)
+        return self.method_map[method](
+            url, headers=headers, data=data, files=request.FILES
+        )
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
@@ -174,7 +178,9 @@ class Api(models.Model):
             Api.cache.purge_global_keys(key)
         return instance
 
-    def delete(self, using: Any = ..., keep_parents: bool = ...) -> tuple[int, dict[str, int]]:
+    def delete(
+        self, using: Any = ..., keep_parents: bool = ...
+    ) -> tuple[int, dict[str, int]]:
         deleted = super().delete(using, keep_parents)
         keys = Api.cache.get_global_keys()
         for key in keys:
