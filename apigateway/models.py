@@ -169,7 +169,7 @@ class Api(models.Model):
             return res
         print(f"{headers=}")
         print(f"{data=}")
-        print(f"{request.files=}")
+        print(f"{request.FILES=}")
         return self.method_map[method](
             url, headers=headers, data=data, files=request.FILES
         )
