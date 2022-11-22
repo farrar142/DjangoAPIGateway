@@ -167,6 +167,8 @@ class Api(models.Model):
             )
             self.unix_session.close()
             return res
+        print(f"{headers=}")
+        print(f"{data=}")
         return self.method_map[method](
             url, headers=headers, data=data, files=request.FILES
         )
