@@ -30,7 +30,7 @@ class Consumer(models.Model):
         return self.user_id
 
     def __str__(self):
-        return self.user_id
+        return f"{self.user_id}"
 
 
 class Upstream(models.Model):
