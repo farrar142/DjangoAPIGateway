@@ -133,7 +133,8 @@ class Api(models.Model):
                     return True, ""
             return False, "permission not allowed"
         else:
-            raise NotImplementedError("plugin %d not implemented" % self.plugin)
+            raise NotImplementedError(
+                "plugin %d not implemented" % self.plugin)
 
     def send_request(self, request: MockRequest) -> requests.Response:
         headers = {}

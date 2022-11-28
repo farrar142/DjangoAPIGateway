@@ -36,6 +36,9 @@ class TestApiGateway(TestCase):
     #         upstream=self.auth_upstream,
     #         plugin=0
     #     )
+    def test_middleware(self):
+        resp = self.client.get("/")
+        print(resp)
 
     # def test_auth_server_authenticate(self):
     #     resp = self.client.post("/auth/token", {
