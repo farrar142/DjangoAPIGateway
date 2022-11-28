@@ -129,12 +129,11 @@ class Api(models.Model):
             auth = InternalJWTAuthentication()
             token, _ = auth.authenticate(request)
             if not isinstance(token, AnonymousUser):
-                if token.get("role") and "admin" in token.get("role"):
+                if token.get("role") and "staff" in token.get("role"):
                     return True, ""
             return False, "permission not allowed"
         else:
-            raise NotImplementedError(
-                "plugin %d not implemented" % self.plugin)
+            raise NotImplementedError("plugin %d not implemented" % self.plugin)
 
     def send_request(self, request: MockRequest) -> requests.Response:
         headers = {}
