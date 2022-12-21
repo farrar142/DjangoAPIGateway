@@ -48,8 +48,3 @@ services:
     working_dir: /usr/src/app
     environment:
       TZ: 'Asia/Seoul'
-
-networks:
-  default:
-    external:
-      name: runthe_backend_default
