@@ -14,7 +14,7 @@ import os
 from glob import glob
 from pathlib import Path
 from dotenv import load_dotenv
-from common_module.settings import SECRET_KEY
+from common_module.settings import *
 
 load_dotenv()
 
