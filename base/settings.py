@@ -14,7 +14,7 @@ import os
 from glob import glob
 from pathlib import Path
 from dotenv import load_dotenv
-from common_module.settings import SECRET_KEY, CHALLENGE_IMAGE_SIZE
+from common_module.settings import SECRET_KEY
 
 load_dotenv()
 
