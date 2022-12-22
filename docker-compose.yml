@@ -29,6 +29,25 @@ services:
     working_dir: /usr/src/app
     environment:
       TZ: 'Asia/Seoul'
+  jenkins:
+    build:
+      dockerfile: docker/deploy/dockerfile
+      context: .
+      args:
+        CONTAINER_NAME: ${CONTAINER_NAME}
+    entrypoint: 'sh docker/deploy/run.sh'
+    container_name: ${CONTAINER_NAME}_deploy
+    hostname: root
+    volumes:
+      - /var/run/celery:/var/run
+      - /home/${USER}/nginx/data/runthe_backend/${CONTAINER_NAME}:/tmp/runthe_backend
+      - /home/${USER}/nginx/data/runthe_backend/${CONTAINER_NAME}/static:/usr/src/app/static
+    ports:
+      - '${PORT}:9999'
+    restart: unless-stopped
+    working_dir: /usr/src/app
+    environment:
+      TZ: 'Asia/Seoul'
   deploy:
     build:
       dockerfile: docker/deploy/dockerfile
