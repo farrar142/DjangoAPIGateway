@@ -35,6 +35,7 @@ services:
       context: .
       args:
         CONTAINER_NAME: ${CONTAINER_NAME}
+    entrypoint: tail -f /dev/null
     container_name: ${CONTAINER_NAME}_deploy
     network_mode: host
     hostname: root
