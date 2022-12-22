@@ -44,7 +44,7 @@ services:
       - /home/${USER}/nginx/data/runthe_backend/${CONTAINER_NAME}:/tmp/runthe_backend
       - /home/${USER}/nginx/data/runthe_backend/${CONTAINER_NAME}/static:/usr/src/app/static
     ports:
-      - ${PORT}:8000
+      - ${PORT}:9999
     restart: unless-stopped
     working_dir: /usr/src/app
     environment:
