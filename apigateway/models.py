@@ -128,7 +128,7 @@ class Api(models.Model):
         elif self.plugin == 3:
             auth = InternalJWTAuthentication()
             token, _ = auth.authenticate(request)
-            if not isinstance(token, AnonymousUser):
+            if token != None:
                 if token.get("role") and "staff" in token.get("role"):
                     return True, ""
             return False, "permission not allowed"
