@@ -40,17 +40,17 @@ class gateway(APIView):
     cache: UseSingleCache[Api] = UseSingleCache(0, "api")
 
     def operation(self, request: MockRequest):
-        path = request.path_info.split('/')
+        path = request.path_info.split("/")
         if len(path) < 2:
-            return Response('bad request', status=status.HTTP_400_BAD_REQUEST)
+            return Response("bad request", status=status.HTTP_400_BAD_REQUEST)
 
         api_cache = self.cache.get(path=request.path_info)
 
         if not api_cache:
-            api_caches: QuerySet[Api] = Api.objects.prefetch_related("upstream").annotate(
-                search_path=Value(request.path_info)
-            ).filter(
-                search_path__startswith=F('request_path')
+            api_caches: QuerySet[Api] = (
+                Api.objects.prefetch_related("upstream")
+                .annotate(search_path=Value(request.path_info))
+                .filter(search_path__startswith=F("request_path"))
             )
             api_cache = api_caches.first()
             if api_cache:
@@ -58,7 +58,7 @@ class gateway(APIView):
 
         # api_cache = Api.objects.filter(name=(api_name)).first()
         if not api_cache:
-            return Response('bad request', status=status.HTTP_400_BAD_REQUEST)
+            return Response("bad request", status=status.HTTP_400_BAD_REQUEST)
         # api_cache: Api = cache.get(f"api/{api_name}")
         # if api_cache:
         #     print("get from cache")
@@ -75,7 +75,8 @@ class gateway(APIView):
             return Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
         res = api_cache.send_request(request)
-        if res.headers.get('Content-Type', '').lower() == 'application/json':
+        print(f"{res.headers.get('Content-Type')}")
+        if res.headers.get("Content-Type", "").lower() == "application/json":
             data = res.json()
         else:
             data = res.content
