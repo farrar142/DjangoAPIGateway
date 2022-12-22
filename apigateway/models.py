@@ -7,7 +7,7 @@ from typing import Any, Optional, Self, Type
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 from django.http.request import HttpRequest
-from django.http.response import HttpResponse
+
 from rest_framework.authentication import get_authorization_header, BasicAuthentication
 from rest_framework import HTTP_HEADER_ENCODING
 from rest_framework.request import Request
@@ -155,16 +155,9 @@ class Api(models.Model):
             for k, v in request.FILES.items():
                 request.data.pop(k)
 
-        if request.content_type:
-            if request.content_type.lower() == "application/json":
-                data = json.dumps(request.data)
-                headers["content-type"] = request.content_type
-            if request.content_type.lower() == "text/html":
-                headers["content-type"] = request.content_type
-                return HttpResponse(request.data, request.content_type)
-            else:
-                data = request.data
-                headers["content-type"] = request.content_type
+        if request.content_type and request.content_type.lower() == "application/json":
+            data = json.dumps(request.data)
+            headers["content-type"] = request.content_type
         else:
             data = request.data
 
