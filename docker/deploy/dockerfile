@@ -9,5 +9,3 @@ RUN mkdir /tmp/uwsgi
 ##aws
 # RUN mkdir ~/.aws
 # COPY ./docker/deploy/.aws/config /root/.aws/credentials
-
-ENTRYPOINT sh docker/deploy/run.sh

@@ -35,7 +35,7 @@ services:
       context: .
       args:
         CONTAINER_NAME: ${CONTAINER_NAME}
-    command: 'sh docker/deploy/run.sh'
+    entrypoint: 'sh docker/deploy/run.sh'
     container_name: ${CONTAINER_NAME}_deploy
     network_mode: host
     hostname: root
@@ -44,7 +44,7 @@ services:
       - /home/${USER}/nginx/data/runthe_backend/${CONTAINER_NAME}:/tmp/runthe_backend
       - /home/${USER}/nginx/data/runthe_backend/${CONTAINER_NAME}/static:/usr/src/app/static
     ports:
-      - ${PORT}:9999
+      - ${PORT}:8000
     restart: unless-stopped
     working_dir: /usr/src/app
     environment:
