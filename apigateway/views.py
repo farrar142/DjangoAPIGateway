@@ -2,6 +2,7 @@ import requests
 from typing import Generic, Optional, List
 from django.db.models import F, Value, QuerySet
 from django.http.request import HttpRequest
+from django.http.response import HttpResponse
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import status
@@ -78,6 +79,8 @@ class gateway(APIView):
         print(f"{res.headers.get('Content-Type')}")
         if res.headers.get("Content-Type", "").lower() == "application/json":
             data = res.json()
+        elif res.headers.get("Content-Type", "").lower() == "text/html":
+            return HttpResponse(content=res.content, content_type="text/html")
         else:
             data = res.content
         return Response(data=data, status=res.status_code)
