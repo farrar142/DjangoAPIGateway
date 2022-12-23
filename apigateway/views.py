@@ -55,7 +55,7 @@ class gateway(APIView):
             )
             api_cache = api_caches.first()
             if api_cache:
-                self.cache.set(api_cache)
+                self.cache.set(api_cache, 3600 * 24 * 30)
 
         # api_cache = Api.objects.filter(name=(api_name)).first()
         if not api_cache:
