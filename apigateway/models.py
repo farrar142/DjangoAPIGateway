@@ -139,7 +139,6 @@ class Api(models.Model):
         headers = {}
         # if self.plugin != 1 and request.META.get('HTTP_AUTHORIZATION'):
         headers["Authorization"] = request.META.get("HTTP_AUTHORIZATION")
-        print(f"{headers=}")
         # headers['content-type'] = request.content_type
         """
         요청 http://localhost:9000/programs/1/data/
@@ -167,9 +166,6 @@ class Api(models.Model):
             )
             self.unix_session.close()
             return res
-        print(f"{headers=}")
-        print(f"{data=}")
-        print(f"{request.FILES=}")
         return self.method_map[method](
             url, headers=headers, data=data, files=request.FILES
         )

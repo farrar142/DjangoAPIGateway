@@ -76,7 +76,6 @@ class gateway(APIView):
             return Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
         res = api_cache.send_request(request)
-        print(f"{res.headers.get('Content-Type')}")
         if res.headers.get("Content-Type", "").lower() == "application/json":
             data = res.json()
         elif res.headers.get("Content-Type", "").lower() == "text/html":
