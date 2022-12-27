@@ -46,7 +46,6 @@ class gateway(APIView):
             return Response("bad request", status=status.HTTP_400_BAD_REQUEST)
 
         api_cache = self.cache.get(path=request.path_info)
-
         if not api_cache:
             api_caches: QuerySet[Api] = (
                 Api.objects.prefetch_related("upstream")
@@ -59,7 +58,7 @@ class gateway(APIView):
 
         # api_cache = Api.objects.filter(name=(api_name)).first()
         if not api_cache:
-            return Response("bad request", status=status.HTTP_400_BAD_REQUEST)
+            return Response("bad request", status=status.HTTP_404_NOT_FOUND)
         # api_cache: Api = cache.get(f"api/{api_name}")
         # if api_cache:
         #     print("get from cache")
