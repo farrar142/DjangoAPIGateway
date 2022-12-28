@@ -156,6 +156,7 @@ class Api(models.Model):
 
         if request.content_type and request.content_type.lower() == "application/json":
             data = json.dumps(request.data)
+            print(f"{request.data=}")
             headers["content-type"] = request.content_type
         else:
             data = request.data
