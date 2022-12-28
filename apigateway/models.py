@@ -159,6 +159,7 @@ class Api(models.Model):
             headers["content-type"] = request.content_type
         else:
             data = request.data
+        print(f"{data=}")
 
         if self.scheme == "http+unix":
             res = self.unix_map[method](
