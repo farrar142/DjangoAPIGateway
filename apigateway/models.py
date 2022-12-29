@@ -168,9 +168,12 @@ class Api(models.Model):
             )
             self.unix_session.close()
             return res
-        return self.method_map[method](
+        resp = self.method_map[method](
             url, headers=headers, data=data, files=request.FILES
         )
+        if resp.status_code in [400, 404]:
+            print(resp.json())
+        return resp
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
