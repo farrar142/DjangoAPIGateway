@@ -9,9 +9,8 @@ from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 from django.http.request import HttpRequest
 
 from rest_framework.authentication import get_authorization_header, BasicAuthentication
-from rest_framework import HTTP_HEADER_ENCODING, status
+from rest_framework import HTTP_HEADER_ENCODING
 from rest_framework.request import Request
-from rest_framework.response import Response
 
 from common_module.authentication import (
     ThirdPartyAuthentication,
@@ -157,6 +156,7 @@ class Api(models.Model):
 
         if request.content_type and request.content_type.lower() == "application/json":
             data = json.dumps(request.data)
+            print(f"{request.data=}")
             headers["content-type"] = request.content_type
         else:
             data = request.data
@@ -173,8 +173,6 @@ class Api(models.Model):
         )
         if resp.status_code in [400, 404]:
             print(resp.json())
-        elif resp.status_code in [204]:
-            return Response(status=status.HTTP_204_NO_CONTENT)
         return resp
 
     def save(self, *args, **kwargs):

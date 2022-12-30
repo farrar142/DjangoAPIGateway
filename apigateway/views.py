@@ -81,6 +81,8 @@ class gateway(APIView):
             return HttpResponse(content=res.content, content_type="text/html")
         else:
             data = res.content
+        if res.status_code == 204:
+            return Response(status=res.status_code)
         return Response(data=data, status=res.status_code)
 
     def get(self, request):
