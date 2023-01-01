@@ -3,13 +3,16 @@ from typing import Generic, Optional, List
 from django.db.models import F, Value, QuerySet
 from django.http.request import HttpRequest
 from django.http.response import HttpResponse
+
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.views import APIView
+from rest_framework.generics import get_object_or_404
+from apigateway.serializers import UpstreamSerializer
 from common_module.caches import UseSingleCache
-from common_module.mixins import MockRequest
-from .models import Api
+from common_module.mixins import MockRequest, ReadOnlyMixin
+from .models import Api, Upstream
 
 # from ninja import NinjaAPI, Router
 
@@ -20,20 +23,11 @@ from .models import Api
 # inner = Router()
 
 
-# @router.get("/test")
-# class Test:
-#     string = "test"
-
-#     def __init__(self, request):
-#         print("add router")
-#         return
-
-#     def __call__(self, request):
-#         return
-
-#     @inner.get("test")
-#     def test(self, request):
-#         return 'test'
+class Consul(ReadOnlyMixin, viewsets.ModelViewSet):
+    authentication_classes = ()
+    queryset = Upstream.objects.all()
+    lookup_field = "alias"
+    serializer_class = UpstreamSerializer
 
 
 class gateway(APIView):

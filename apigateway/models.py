@@ -30,6 +30,11 @@ class SchemeType(models.TextChoices):
     UNITX = "http+unix"
 
 
+class ApiType(models.TextChoices):
+    NORMAL = "일반"
+    ADMIN = "관리자"
+
+
 class Consumer(models.Model):
     user_id = models.IntegerField()
     apikey = models.CharField(max_length=32)

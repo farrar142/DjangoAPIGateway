@@ -15,10 +15,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include, re_path
+from rest_framework import routers
+
 # from django.conf.urls import url
-from apigateway.views import gateway
+from apigateway.views import gateway, Consul
+
+router = routers.DefaultRouter()
+
+router.register("", Consul)
+
 urlpatterns = [
-    path('gateway/', admin.site.urls),
-    # path('test/', api.urls),
-    re_path(r'.*', gateway.as_view()),
+    path("gateway/", admin.site.urls),
+    path("consul/", include(router.urls)),
+    # path("", include(router.urls)),
+    re_path(r".*", gateway.as_view()),
 ]
