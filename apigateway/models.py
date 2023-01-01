@@ -2,7 +2,7 @@ import requests
 import requests_unixsocket
 import json
 
-from typing import Any, Optional, Self, Type
+from typing import Any, Callable, Optional, Self, Type, TypedDict
 
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
@@ -21,6 +21,14 @@ from common_module.mixins import MockRequest
 
 # Create your models here.
 
+SCHEME_DELIMETER = "://"
+
+
+class SchemeType(models.TextChoices):
+    HTTP = "http"
+    HTTPS = "https"
+    UNITX = "http+unix"
+
 
 class Consumer(models.Model):
     user_id = models.IntegerField()
@@ -35,9 +43,16 @@ class Consumer(models.Model):
 
 class Upstream(models.Model):
     host = models.CharField(max_length=255)
-    alias = models.CharField(max_length=64, default="")
+    alias = models.CharField(max_length=64, default="", unique=True)
+    scheme = models.CharField(
+        max_length=64, choices=SchemeType.choices, default=SchemeType.HTTP
+    )
 
-    def toString(self):
+    @property
+    def full_path(self):
+        return self.scheme + SCHEME_DELIMETER + self.host
+
+    def to_string(self):
         return self.host
 
     def __str__(self):
@@ -53,7 +68,6 @@ class Upstream(models.Model):
 class Api(models.Model):
     cache: UseSingleCache[Type[Self]] = UseSingleCache(0, "api")
 
-    SCHEME_DELIMETER = "://"
     PLUGIN_CHOICE_LIST = (
         (0, "토큰을 검사하지 않습니다"),
         (1, "Basic auth"),
@@ -61,22 +75,14 @@ class Api(models.Model):
         (3, "게이트웨이에서 토큰을 검사합니다. 어드민 만 접근가능합니다."),
     )
 
-    class SchemeType(models.TextChoices):
-        HTTP = "http"
-        HTTPS = "https"
-        UNITX = "http+unix"
-
     name = models.CharField(max_length=128, unique=True)
     request_path = models.CharField(max_length=255)
     wrapped_path = models.CharField(max_length=255)
-    scheme = models.CharField(
-        max_length=64, choices=SchemeType.choices, default=SchemeType.HTTPS
-    )
     upstream = models.ForeignKey(Upstream, on_delete=models.CASCADE)
     plugin = models.IntegerField(choices=PLUGIN_CHOICE_LIST, default=0)
     consumers = models.ManyToManyField(Consumer, blank=True)
 
-    method_map = {
+    method_map: dict[str, Callable[..., requests.Response]] = {
         "get": requests.get,
         "post": requests.post,
         "put": requests.put,
@@ -99,7 +105,7 @@ class Api(models.Model):
 
     @property
     def full_path(self):
-        return self.scheme + "://" + self.upstream.toString() + self.wrapped_path
+        return self.upstream.full_path + self.wrapped_path
 
     def check_plugin(self, request: MockRequest):
         if self.plugin == 0:
@@ -162,7 +168,7 @@ class Api(models.Model):
             data = request.data
         print(f"{data=}")
 
-        if self.scheme == "http+unix":
+        if self.upstream.scheme == SchemeType.UNITX:
             res = self.unix_map[method](
                 url, headers=headers, data=data, files=request.FILES
             )
