@@ -183,7 +183,10 @@ class Api(models.Model):
             url, headers=headers, data=data, files=request.FILES
         )
         if resp.status_code in [400, 404]:
-            print(resp.json())
+            try:
+                print(resp.json())
+            except:
+                return resp
         return resp
 
     def save(self, *args, **kwargs):
