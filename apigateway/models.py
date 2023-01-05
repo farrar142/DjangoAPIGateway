@@ -112,9 +112,9 @@ class Api(models.Model):
     def full_path(self):
         return self.upstream.full_path + self.wrapped_path
 
-    def check_plugin(self, request: MockRequest):
+    def check_plugin(self, request: MockRequest) -> tuple[bool, str, int]:
         if self.plugin == 0:
-            return True, ""
+            return True, "", 200
 
         elif self.plugin == 1:
             auth = BasicAuthentication()
@@ -124,25 +124,25 @@ class Api(models.Model):
                 if authenticated:
                     user, password = authenticated
             except:
-                return False, "Authentication credentials were not provided"
+                return False, "Authentication credentials were not provided", 401
 
             if user and self.consumers.filter(user=user):
-                return True, ""
+                return True, "", 200
             else:
-                return False, "permission not allowed"
+                return False, "permission not allowed", 403
         elif self.plugin == 2:
             apikey = request.META.get("HTTP_APIKEY")
             consumers = self.consumers.filter(apikey=apikey)
             if consumers.exists():
-                return True, ""
-            return False, "apikey need"
+                return True, "", 200
+            return False, "apikey need", 401
         elif self.plugin == 3:
             auth = InternalJWTAuthentication()
             token, _ = auth.authenticate(request)
             if token != None:
                 if token.get("role") and "staff" in token.get("role"):
-                    return True, ""
-            return False, "permission not allowed"
+                    return True, "", 200
+            return False, "permission not allowed", 403
         else:
             raise NotImplementedError("plugin %d not implemented" % self.plugin)
 

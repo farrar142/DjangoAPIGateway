@@ -64,9 +64,9 @@ class gateway(APIView):
         #     cache.set(f"api/{api_name}", apimodel)
         #     api_cache = apimodel
 
-        valid, msg = api_cache.check_plugin(request)
+        valid, msg, status = api_cache.check_plugin(request)
         if not valid:
-            return Response(msg, status=status.HTTP_400_BAD_REQUEST)
+            return Response(msg, status=status)
 
         res = api_cache.send_request(request)
         if res.headers.get("Content-Type", "").lower() == "application/json":
