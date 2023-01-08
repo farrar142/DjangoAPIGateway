@@ -72,7 +72,9 @@ class gateway(APIView):
         if res.headers.get("Content-Type", "").lower() == "application/json":
             data = res.json()
         elif res.headers.get("Content-Type", "").lower() == "text/html":
-            return HttpResponse(content=res.content, content_type="text/html")
+            return HttpResponse(
+                content=res.content, status=res.status_code, content_type="text/html"
+            )
         else:
             data = res.content
         if res.status_code == 204:
