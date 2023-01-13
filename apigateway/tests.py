@@ -2,7 +2,7 @@ import requests
 import time
 from rest_framework import status
 from rest_framework_simplejwt.tokens import AccessToken
-from base.test import TestCase
+from runthe_backend.test import TestCase
 from common_module.mixins import ServerRequests
 from .models import Api, Upstream
 from common_module.authentication import parse_jwt
