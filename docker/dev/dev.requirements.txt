@@ -1,3 +1,0 @@
-django-extensions
-autopep8
--r requirements.txt
