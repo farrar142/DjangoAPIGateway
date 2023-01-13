@@ -58,7 +58,7 @@ services:
         PLATFORM: ${PLATFORM}
     entrypoint: 'sh docker/deploy/run.sh'
     container_name: ${CONTAINER_NAME}_deploy
-    network_mode: host
+    # network_mode: host
     hostname: root
     volumes:
       - /var/run/celery:/var/run
