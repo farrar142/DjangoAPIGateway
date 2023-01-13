@@ -9,7 +9,7 @@ from django.urls import re_path, path
 from apigateway.socket_auth import TokenAuthMiddleware
 from .routing import websocket_urlpatterns
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "runthe_backend.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "runthe_backend.settings.prod")
 print("asgi called")
 # application = get_default_application()
 application = ProtocolTypeRouter(
