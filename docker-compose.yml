@@ -35,6 +35,7 @@ services:
       context: .
       args:
         CONTAINER_NAME: ${CONTAINER_NAME}
+        PLATFORM: ${PLATFORM}
     entrypoint: 'sh docker/deploy/run.sh'
     container_name: ${CONTAINER_NAME}_deploy
     hostname: root
@@ -54,6 +55,7 @@ services:
       context: .
       args:
         CONTAINER_NAME: ${CONTAINER_NAME}
+        PLATFORM: ${PLATFORM}
     entrypoint: 'sh docker/deploy/run.sh'
     container_name: ${CONTAINER_NAME}_deploy
     network_mode: host
