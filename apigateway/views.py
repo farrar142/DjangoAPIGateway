@@ -76,7 +76,14 @@ class gateway(APIView):
                 content=res.content, status=res.status_code, content_type="text/html"
             )
         else:
-            data = res.content
+            return HttpResponse(
+                content=res.content,
+                status=res.status_code,
+                content_type=res.headers.get("Content-Type", "").lower(),
+            )
+
+        # else:
+        #     data = res.content
         if res.status_code == 204:
             return Response(status=res.status_code)
         return Response(data=data, status=res.status_code)
