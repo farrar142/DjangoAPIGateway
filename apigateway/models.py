@@ -140,7 +140,7 @@ class Api(models.Model):
             auth = InternalJWTAuthentication()
             token, _ = auth.authenticate(request)
             if token != None:
-                if token.get("role") and "staff" in token.get("role"):
+                if token.role and "staff" in token.role:
                     return True, "", 200
             return False, "permission not allowed", 403
         else:
