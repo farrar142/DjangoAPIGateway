@@ -37,6 +37,7 @@ class ApiType(models.TextChoices):
 
 class Consumer(models.Model):
     user_id = models.IntegerField()
+    identifier = models.CharField(max_length=256, default="")
     apikey = models.CharField(max_length=32)
 
     def __unicode__(self):
