@@ -7,7 +7,7 @@ from .models import Api, Consumer, Upstream
 
 class APIAdmin(admin.ModelAdmin):
     ordering = ("upstream", "request_path")
-    list_filter = ("upstream",)
+    list_filter = ("upstream", "plugin")
 
 
 # Register your models here.
