@@ -37,8 +37,8 @@ services:
         CONTAINER_NAME: ${CONTAINER_NAME}
         PLATFORM: ${PLATFORM}
     healthcheck:
-      test: ['curl', '-f', 'http://172.17.0.1:${PORT}']
-      interval: 30s
+      test: ['curl', '-f', 'http://${CONTAINER_NAME}_deploy:${PORT}']
+      interval: 10s
       retries: 5
       start_period: 10s
       timeout: 5s
