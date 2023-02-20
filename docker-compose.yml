@@ -37,10 +37,11 @@ services:
         CONTAINER_NAME: ${CONTAINER_NAME}
         PLATFORM: ${PLATFORM}
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://172.17.0.1:${PORT}']
+      test: ['curl', '-f', 'http://172.17.0.1:${PORT}']
       interval: 30s
       retries: 5
-      start_period: 60s
+      start_period: 10s
+      timeout: 5s
     entrypoint: 'sh docker/deploy/run.sh'
     container_name: ${CONTAINER_NAME}_deploy
     hostname: root
@@ -62,10 +63,11 @@ services:
         CONTAINER_NAME: ${CONTAINER_NAME}
         PLATFORM: ${PLATFORM}
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://172.17.0.1:${PORT}']
+      test: ['curl', '-f', 'http://172.17.0.1:${PORT}']
       interval: 30s
       retries: 5
-      start_period: 60s
+      start_period: 10s
+      timeout: 5s
     entrypoint: 'sh docker/deploy/run.sh'
     container_name: ${CONTAINER_NAME}_deploy
     # network_mode: host
