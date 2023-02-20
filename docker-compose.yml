@@ -37,7 +37,7 @@ services:
         CONTAINER_NAME: ${CONTAINER_NAME}
         PLATFORM: ${PLATFORM}
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://172.17.0.1:${PORT}']
+      test: ['CMD', 'curl', '-f', 'http://172.17.0.1:${PORT}/gateway/']
       interval: 30s
       retries: 5
       start_period: 10s
@@ -62,7 +62,7 @@ services:
         CONTAINER_NAME: ${CONTAINER_NAME}
         PLATFORM: ${PLATFORM}
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://172.17.0.1:${PORT}']
+      test: ['CMD', 'curl', '-f', 'http://172.17.0.1:${PORT}/gateway/']
       interval: 30s
       retries: 5
       start_period: 10s
