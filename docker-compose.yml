@@ -66,8 +66,7 @@ services:
       interval: 30s
       retries: 5
       start_period: 10s
-    entrypoint: tail -f /dev/null
-    # entrypoint: 'sh docker/deploy/gateway-run.sh'
+    entrypoint: 'sh docker/deploy/gateway-run.sh'
     container_name: ${CONTAINER_NAME}_deploy
     # network_mode: host
     hostname: root
