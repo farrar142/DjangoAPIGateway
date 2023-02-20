@@ -41,7 +41,7 @@ services:
       interval: 30s
       retries: 5
       start_period: 10s
-    entrypoint: 'sh docker/deploy/run.sh'
+    entrypoint: 'sh docker/deploy/gateway-run.sh'
     container_name: ${CONTAINER_NAME}_deploy
     hostname: root
     volumes:
@@ -66,7 +66,7 @@ services:
       interval: 30s
       retries: 5
       start_period: 10s
-    entrypoint: 'sh docker/deploy/run.sh'
+    entrypoint: 'sh docker/deploy/gateway-run.sh'
     container_name: ${CONTAINER_NAME}_deploy
     # network_mode: host
     hostname: root
