@@ -46,7 +46,8 @@ services:
     hostname: root
     volumes:
       - /var/run/celery:/var/run
-      - ./static:/usr/src/app/static
+      - /home/${USER}/nginx/data/runthe_backend/${CONTAINER_NAME}:/tmp/runthe_backend
+      - /home/${USER}/nginx/data/runthe_backend/${CONTAINER_NAME}/static:/usr/src/app/static
     ports:
       - '${PORT}:8000'
     restart: unless-stopped
