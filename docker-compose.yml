@@ -29,31 +29,6 @@ services:
     working_dir: /usr/src/app
     environment:
       TZ: 'Asia/Seoul'
-  jenkins:
-    build:
-      dockerfile: docker/deploy/dockerfile
-      context: .
-      args:
-        CONTAINER_NAME: ${CONTAINER_NAME}
-        PLATFORM: ${PLATFORM}
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://172.17.0.1:${PORT}/gateway/']
-      interval: 30s
-      retries: 5
-      start_period: 10s
-    entrypoint: 'sh docker/deploy/gateway-run.sh'
-    container_name: ${CONTAINER_NAME}_deploy
-    hostname: root
-    volumes:
-      - /var/run/celery:/var/run
-      - /home/${USERDIR}/nginx/data/runthe_backend/${CONTAINER_NAME}:/tmp/runthe_backend
-      - /home/${USERDIR}/nginx/data/runthe_backend/${CONTAINER_NAME}/static:/usr/src/app/static
-    ports:
-      - '${PORT}:8000'
-    restart: unless-stopped
-    working_dir: /usr/src/app
-    environment:
-      TZ: 'Asia/Seoul'
   deploy:
     build:
       dockerfile: docker/deploy/dockerfile
@@ -80,3 +55,24 @@ services:
     working_dir: /usr/src/app
     environment:
       TZ: 'Asia/Seoul'
+  internal:
+    build:
+      dockerfile: docker/deploy/dockerfile
+      context: .
+      args:
+        CONTAINER_NAME: ${CONTAINER_NAME}
+        PLATFORM: ${PLATFORM}
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://172.17.0.1:${PORT}/gateway/']
+      interval: 30s
+      retries: 5
+      start_period: 10s
+    entrypoint: 'sh docker/deploy/internal-run.sh'
+    container_name: ${CONTAINER_NAME}_deploy
+    hostname: root
+    restart: unless-stopped
+    working_dir: /usr/src/app
+    environment:
+      TZ: 'Asia/Seoul'
+    ports:
+      - '${PORT}:8000'
