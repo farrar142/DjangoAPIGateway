@@ -28,6 +28,7 @@ class Consul(ReadOnlyMixin, viewsets.ModelViewSet):
     queryset = Upstream.objects.all()
     lookup_field = "alias"
     serializer_class = UpstreamSerializer
+    ordering = ["id"]
 
 
 class gateway(APIView):
