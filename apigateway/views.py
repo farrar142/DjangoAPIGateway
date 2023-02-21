@@ -29,6 +29,7 @@ class Consul(ReadOnlyMixin, viewsets.ModelViewSet):
     lookup_field = "alias"
     serializer_class = UpstreamSerializer
     ordering = ["id"]
+    pagination_class = None
 
 
 class gateway(APIView):
