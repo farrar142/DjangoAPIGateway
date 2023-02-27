@@ -52,9 +52,6 @@ class TestApiGateway(TestCase):
         # print(f"{AccessToken(access_token)=}")
         resp = self.client.get("/users/me/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        resp = self.client.get("/consul/API_GATEWAY/")
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        print(resp.json())
 
     def test_server_request(self):
         auth = ServerRequests("ASSET_SERVER", "")

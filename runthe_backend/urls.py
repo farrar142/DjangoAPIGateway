@@ -18,11 +18,10 @@ from django.urls import path, include, re_path
 from rest_framework import routers
 
 # from django.conf.urls import url
-from apigateway.views import gateway, Consul
+from apigateway.views import gateway
 
 router = routers.DefaultRouter()
 
-router.register("", Consul)
 
 urlpatterns = [
     path("gateway/", admin.site.urls),

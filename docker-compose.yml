@@ -69,3 +69,55 @@ services:
       TZ: 'Asia/Seoul'
     ports:
       - '${PORT}:8000'
+
+  jenkins:
+    build:
+      dockerfile: docker/deploy/dockerfile
+      context: .
+      args:
+        CONTAINER_NAME: ${CONTAINER_NAME}
+        PLATFORM: ${PLATFORM}
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://172.17.0.1:${PORT}/gateway/']
+      interval: 30s
+      retries: 5
+      start_period: 10s
+    entrypoint: 'sh docker/deploy/gateway-run.sh ${WORKER_MULTIPLIER}'
+    container_name: ${CONTAINER_NAME}_deploy
+    # network_mode: host
+    hostname: root
+    volumes:
+      - /var/run/celery:/var/run
+      - /home/${USERDIR}/nginx/data/runthe_backend/${CONTAINER_NAME}:/tmp/runthe_backend
+      - /home/${USERDIR}/nginx/data/runthe_backend/${CONTAINER_NAME}/static:/usr/src/app/static
+    # ports:
+    #   - '${PORT}:8000'
+    restart: unless-stopped
+    working_dir: /usr/src/app
+    environment:
+      TZ: 'Asia/Seoul'
+    cpu_count: 2
+    mem_limit: 512m
+  internal-jenkins:
+    build:
+      dockerfile: docker/deploy/dockerfile
+      context: .
+      args:
+        CONTAINER_NAME: ${CONTAINER_NAME}
+        PLATFORM: ${PLATFORM}
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://172.17.0.1:${PORT}/gateway/']
+      interval: 30s
+      retries: 5
+      start_period: 10s
+    entrypoint: 'sh docker/deploy/internal-run.sh 1'
+    container_name: ${CONTAINER_NAME}_internal_deploy
+    hostname: root
+    restart: unless-stopped
+    working_dir: /usr/src/app
+    environment:
+      TZ: 'Asia/Seoul'
+    ports:
+      - '${PORT}:8000'
+    cpu_count: 2
+    mem_limit: 512m
