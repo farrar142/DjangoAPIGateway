@@ -14,23 +14,6 @@ from common_module.caches import UseSingleCache
 from common_module.mixins import MockRequest, ReadOnlyMixin
 from .models import Api, Upstream
 
-# from ninja import NinjaAPI, Router
-
-# api = NinjaAPI()
-
-# router = Router()
-
-# inner = Router()
-
-
-class Consul(ReadOnlyMixin, viewsets.ModelViewSet):
-    authentication_classes = ()
-    queryset = Upstream.objects.all()
-    lookup_field = "alias"
-    serializer_class = UpstreamSerializer
-    ordering = ["id"]
-    pagination_class = None
-
 
 class gateway(APIView):
     authentication_classes = ()

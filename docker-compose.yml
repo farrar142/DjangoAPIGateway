@@ -5,6 +5,9 @@ services:
     build:
       dockerfile: docker/dev/dockerfile
       context: .
+      args:
+        CONTAINER_NAME: ${CONTAINER_NAME}
+        PLATFORM: ${PLATFORM}
     command: tail -f /dev/null
     # command: "python3 manage.py runserver 0.0.0.0:8000"
     # command: 'sh docker/dev/run.sh'
@@ -16,16 +19,6 @@ services:
     ports:
       - '${PORT}:8000'
     restart: always
-    working_dir: /usr/src/app
-    environment:
-      TZ: 'Asia/Seoul'
-  build:
-    build:
-      dockerfile: docker/deploy/build.dockerfile
-      context: .
-    image: ${CONTAINER_NAME}:build
-    container_name: ${CONTAINER_NAME}_build
-    hostname: root
     working_dir: /usr/src/app
     environment:
       TZ: 'Asia/Seoul'
@@ -41,7 +34,7 @@ services:
       interval: 30s
       retries: 5
       start_period: 10s
-    entrypoint: 'sh docker/deploy/gateway-run.sh'
+    entrypoint: 'sh docker/deploy/gateway-run.sh ${WORKER_MULTIPLIER}'
     container_name: ${CONTAINER_NAME}_deploy
     # network_mode: host
     hostname: root
@@ -67,7 +60,7 @@ services:
       interval: 30s
       retries: 5
       start_period: 10s
-    entrypoint: 'sh docker/deploy/internal-run.sh'
+    entrypoint: 'sh docker/deploy/internal-run.sh 1'
     container_name: ${CONTAINER_NAME}_internal_deploy
     hostname: root
     restart: unless-stopped
