@@ -174,3 +174,14 @@ ALLOWED_HOSTS = ["*"]
 STATIC_ROOT = "static/"
 
 LOGIN_URL = "/gateway/"
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "TIMEOUT": 60 * 60 * 24 * 7,
+        },
+    }
+}
