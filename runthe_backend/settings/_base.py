@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "apigateway",
     "rest_framework",
     "common_module",
+    "eventsourcing_django",
 ]
 
 MIDDLEWARE = [

@@ -2,12 +2,7 @@
 version: '3.7'
 services:
   dev:
-    build:
-      dockerfile: docker/dev/dockerfile
-      context: .
-      args:
-        CONTAINER_NAME: ${CONTAINER_NAME}
-        PLATFORM: ${PLATFORM}
+    image: sandring/runthe:${PLATFORM}-dev
     command: tail -f /dev/null
     # command: "python3 manage.py runserver 0.0.0.0:8000"
     # command: 'sh docker/dev/run.sh'
