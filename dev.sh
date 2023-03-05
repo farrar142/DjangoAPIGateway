@@ -1,0 +1,1 @@
+python3 manage.py $@ --settings=runthe_backend.settings.dev
