@@ -24,54 +24,52 @@ class gateway(APIView):
         if len(path) < 2:
             return Response("bad request", status=status.HTTP_400_BAD_REQUEST)
 
-        api_cache = self.cache.get(path=request.path_info)
+        api_cache: Optional[Api] = self.cache.get(path=request.path_info, upstream="*")
+        if api_cache:
+            print("hit cache")
         if not api_cache:
             api_caches: QuerySet[Api] = (
-                Api.objects.prefetch_related("upstream")
+                Api.objects.prefetch_related("upstream", "upstream__targets")
                 .annotate(search_path=Value(request.path_info))
                 .filter(search_path__startswith=F("request_path"))
             )
             api_cache = api_caches.first()
             if api_cache:
-                self.cache.set(api_cache, 3600 * 24 * 30)
+                self.cache.set(
+                    api_cache,
+                    3600 * 24 * 30,
+                    path=request.path_info,
+                    upstream=api_cache.upstream.pk,
+                )
 
-        # api_cache = Api.objects.filter(name=(api_name)).first()
         if not api_cache:
             return Response("bad request", status=status.HTTP_404_NOT_FOUND)
-        # api_cache: Api = cache.get(f"api/{api_name}")
-        # if api_cache:
-        #     print("get from cache")
-        # if not api_cache:
-        #     apimodel = Api.objects.filter(name=api_name).first()
-        #     if apimodel is None:
-        #         return Response('bad request', status=status.HTTP_400_BAD_REQUEST)
-        #     print("set cache")
-        #     cache.set(f"api/{api_name}", apimodel)
-        #     api_cache = apimodel
 
         valid, msg, _status = api_cache.check_plugin(request)
         if not valid:
             return Response(msg, status=_status)
+        with api_cache:
+            res = api_cache.send_request(request)
+            if res.headers.get("Content-Type", "").lower() == "application/json":
+                data = res.json()
+            elif res.headers.get("Content-Type", "").lower() == "text/html":
+                return HttpResponse(
+                    content=res.content,
+                    status=res.status_code,
+                    content_type="text/html",
+                )
+            else:
+                return HttpResponse(
+                    content=res.content,
+                    status=res.status_code,
+                    content_type=res.headers.get("Content-Type", "").lower(),
+                )
 
-        res = api_cache.send_request(request)
-        if res.headers.get("Content-Type", "").lower() == "application/json":
-            data = res.json()
-        elif res.headers.get("Content-Type", "").lower() == "text/html":
-            return HttpResponse(
-                content=res.content, status=res.status_code, content_type="text/html"
-            )
-        else:
-            return HttpResponse(
-                content=res.content,
-                status=res.status_code,
-                content_type=res.headers.get("Content-Type", "").lower(),
-            )
-
-        # else:
-        #     data = res.content
-        if res.status_code == 204:
-            return Response(status=res.status_code)
-        return Response(data=data, status=res.status_code)
+            # else:
+            #     data = res.content
+            if res.status_code == 204:
+                return Response(status=res.status_code)
+            return Response(data=data, status=res.status_code)
 
     def get(self, request):
         return self.operation(request)
