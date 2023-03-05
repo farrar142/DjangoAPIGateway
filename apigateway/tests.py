@@ -1,11 +1,13 @@
 import requests
 import time
+from django.db import connection
 from rest_framework import status
 from rest_framework_simplejwt.tokens import AccessToken
 from runthe_backend.test import TestCase
 from common_module.mixins import ServerRequests
-from .models import Api, Upstream
+from .models import Api, Upstream, Target
 from common_module.authentication import parse_jwt
+from common_module.caches import UseSingleCache, cache
 
 # Create your tests here.
 SCHEME = "https"
@@ -29,8 +31,8 @@ class TestApiGateway(TestCase):
         )
         self.auth = Api.objects.create(
             name="users",
-            request_path="/users/me",
-            wrapped_path="/users/me",
+            request_path="/users",
+            wrapped_path="/users",
             upstream=self.auth_upstream,
             plugin=0,
         )
@@ -41,7 +43,7 @@ class TestApiGateway(TestCase):
 
     def test_auth_server_authenticate(self):
         resp = self.client.post(
-            "/auth/token",
+            "/auth/signin/classic",
             {"email": "gksdjf1690@gmail.com", "password": "gksdjf452@"},
         )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -53,6 +55,47 @@ class TestApiGateway(TestCase):
         resp = self.client.get("/users/me/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
-    def test_server_request(self):
-        auth = ServerRequests("ASSET_SERVER", "")
-        print(auth.host)
+    def test_upstream_round_robin(self):
+        from django.conf import settings
+
+        cache.clear()
+        for i in range(5):
+            self.auth_upstream.targets.create(
+                host="www.naver.com", scheme="https", weight=50
+            )
+        settings.DEBUG = True
+        for i in range(10):
+            resp = self.client.get("/users/")
+
+        # self.auth_upstream.targets.create(
+        #     host="www.naver.com", scheme="https", weight=50
+        # )
+        # for i in range(15):
+        #     self.client.get("/users/")
+
+        # print(self.auth_upstream.weight_round())
+
+    def test_cache(self):
+        cache.clear()
+        c = UseSingleCache(0, "test")
+        c.set("object", path="/test", upstream=1)
+        c.set("object", path="/test", upstream=2)
+        c.set("object", path="/test", upstream=3)
+        self.assertEqual(len(c.get_global_keys()), 3)
+        c.purge_global_key()
+        self.assertEqual(len(c.get_global_keys()), 0)
+        c.set("object", path="/test", upstream=1)
+        c.set("object", path="/test", upstream=2)
+        c.set("object", path="/test", upstream=3)
+        self.assertEqual(len(c.get_global_keys()), 3)
+        c.purge(path="/test", upstream=1)
+        self.assertEqual(len(c.get_global_keys()), 2)
+        c.purge_by_regex(upstream="*", path="/test")
+        self.assertEqual(len(c.get_global_keys()), 0)
+        c.set("object", path="/auth", upstream=1)
+        c.set("object", path="/test", upstream=1)
+        c.set("object", path="/users", upstream=1)
+        self.assertEqual(len(c.get_global_keys()), 3)
+        print(c.get_global_keys())
+        c.purge_by_regex(upstream=1, path="*")
+        self.assertEqual(len(c.get_global_keys()), 0)
