@@ -371,6 +371,7 @@ class Api(models.Model):
 
     def __enter__(self):
         con = self.upstream.incr_conn()
+        print("conn count", con)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
