@@ -1,5 +1,3 @@
-import requests
-
 # import requests_unixsocket
 import json
 from itertools import accumulate
@@ -12,36 +10,28 @@ from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 from django.utils.html import format_html
 from django.urls import reverse_lazy
 from django.core.cache import cache
-
+from django.urls import reverse
+import requests
 from rest_framework.authentication import get_authorization_header, BasicAuthentication
-from rest_framework import HTTP_HEADER_ENCODING
+from rest_framework import HTTP_HEADER_ENCODING, exceptions
 from rest_framework.request import Request
+from apigateway.nodes import ChildNode, LoadBalancer, Node
 
 from common_module.authentication import (
     InternalJWTAuthentication,
 )
 from common_module.caches import UseSingleCache
+from common_module.exceptions import GenericException, TimeoutException
 from common_module.mixins import MockRequest
 
+from .ret_requests import method_map
+
 # Create your models here.
-
-SCHEME_DELIMETER = "://"
-
-
-class SchemeType(models.TextChoices):
-    HTTP = "http"
-    HTTPS = "https"
-    UNITX = "http+unix"
 
 
 class ApiType(models.TextChoices):
     NORMAL = "일반"
     ADMIN = "관리자"
-
-
-class LoadBalancingType(models.TextChoices):
-    ROUND_ROBIN = "round_robin"
-    WEIGHT_ROBIN = "weight_robin"
 
 
 class Consumer(models.Model):
@@ -56,55 +46,25 @@ class Consumer(models.Model):
         return f"{self.user_id}"
 
 
-"""
-1. 로드 밸런싱 기능
-2. 다른 Target으로 Retry기능
-"""
-
-
-class Node(models.Model):
-    class Meta:
-        abstract = True
-
-    host = models.CharField(max_length=255)
-    scheme = models.CharField(
-        max_length=64, choices=SchemeType.choices, default=SchemeType.HTTP
-    )
-    weight = models.PositiveIntegerField(default=100)
-
-    @property
-    def full_path(self):
-        return self.scheme + SCHEME_DELIMETER + self.host
-
-
-class ServerConnectionRecord:
-    pk: int
-
-    @property
-    def conn_key(self):
-        return f"upstream:{self.pk}-connection"
-
-    def get_conn(self):
-        return cache.get(self.conn_key, 0)
-
-    def incr_conn(self):
-        # 현재 업스트림에 연결돈 커넥션 수를 증가시킵니다
-        cache.add(self.conn_key, 0)
-        return cache.incr(self.conn_key, 1)
-
-    def decr_conn(self):
-        # 현재 업스트림에 연결돈 커넥션 수를 감소시킵니다
-        return cache.decr(self.conn_key, 1)
-
-
-class Upstream(ServerConnectionRecord, Node):
+class Upstream(LoadBalancer):
     alias = models.CharField(max_length=64, default="", unique=True)
-    load_balance = models.CharField(
-        max_length=64,
-        default=LoadBalancingType.ROUND_ROBIN,
-        choices=LoadBalancingType.choices,
-    )
+    retries = models.PositiveIntegerField(default=0)
+    timeout = models.PositiveIntegerField(default=0)
+
     targets: models.Manager["Target"]
+    api_set: models.Manager["Api"]
+
+    @property
+    def total_targets(self):
+        return self.targets.count() or 1
+
+    total_targets.fget.short_description = "총 노드 수"
+
+    @property
+    def total_apis(self):
+        return self.api_set.count()
+
+    total_apis.fget.short_description = "총 API 수"
 
     @property
     def total_weight(self):
@@ -116,6 +76,14 @@ class Upstream(ServerConnectionRecord, Node):
         return aggregate + self.weight
 
     total_weight.fget.short_description = "총 가중치"
+
+    method_map: dict[str, Callable[..., requests.Response]] = {
+        "get": requests.get,
+        "post": requests.post,
+        "put": requests.put,
+        "patch": requests.patch,
+        "delete": requests.delete,
+    }
 
     # def initialize_target(self):
     #     keys = list(map(lambda x: x.my_key, self.targets.all()))
@@ -132,48 +100,6 @@ class Upstream(ServerConnectionRecord, Node):
     def __str__(self):
         return f"{self.alias}"
 
-    @property
-    def req_key(self):
-        return f"upstream:{self.pk}-called"
-
-    def call(self):
-        cache.add(self.req_key, 0)
-        return cache.incr(self.req_key, 1)
-
-    def round_robin(
-        self, req_count: int, targets: list["Target"], target_count: int
-    ) -> Node:
-        cur_idx = req_count % target_count
-        return targets[cur_idx - 1]
-
-    def weight_round(self, req_count: int, targets: list["Target"], target_count: int):
-        """
-        100,50,200 가중치를
-        100 150 250 구간으로 나눔
-        """
-        max = sum(map(lambda x: x.weight, targets))
-        accs = accumulate(map(lambda x: x.weight, targets))
-        zipped = list(zip(accs, targets))
-
-        rand = randint(0, max)
-
-        def find(node: tuple[int, Node]):
-            weight = node[0]
-            return rand < weight
-
-        node: tuple[int, Node] = next(filter(find, zipped), (0, self))
-        return node[1]
-
-    def load_balancing(self) -> Node:
-        req_count = self.call()
-        targets = list(filter(lambda x: x.enabled, self.targets.all()))
-        target_count = len(targets)
-        if target_count == 0:
-            return self
-        if self.load_balance == LoadBalancingType.WEIGHT_ROBIN:
-            return self.weight_round(req_count, targets, target_count)
-        return self.round_robin(req_count, targets, target_count)
-
     def save(self, *args, **kwargs) -> None:
         res = super().save(*args, **kwargs)
         single_cache = UseSingleCache(0, "api")
@@ -186,13 +112,38 @@ class Upstream(ServerConnectionRecord, Node):
         single_cache.purge_by_regex(upstream=self.pk, path="*")
         return result
 
+    def send_request(
+        self,
+        api: "Api",
+        trailing_path: str,
+        method: str,
+        headers=None,
+        data=None,
+        files=None,
+    ):
+        retries = 0
 
-class Target(Node):
+        def sender(retries=0):
+            if self.retries < retries:
+                raise TimeoutException
+            try:
+                node = self.load_balancing()
+                print(node.pk)
+                url = node.full_path + api.wrapped_path + trailing_path
+                return self.method_map[method](
+                    url, headers=headers, data=data, files=files, timeout=self.timeout
+                )
+            except:
+                return sender(retries + 1)
+
+        return sender(retries)
+
+
+class Target(ChildNode):
     upstream = models.ForeignKey(
         Upstream, on_delete=models.CASCADE, related_name="targets"
     )
     upstream_id: int
-    enabled = models.BooleanField("활성화", default=True)
 
     def toggle_button(self):
         text = "Activate" if not self.enabled else "Deactivate"
@@ -216,7 +167,8 @@ class Target(Node):
         return self.host
 
     def __str__(self):
-        return f"{self.upstream.alias}/{self.host} - {self.weight}"
+        str(self.upstream.alias)
+        return f"{self.scheme}/{self.host} - {self.weight}"
 
     def save(self, *args, **kwargs) -> None:
         res = super().save(*args, **kwargs)
@@ -241,26 +193,22 @@ class Api(models.Model):
     cache: UseSingleCache[Type[Self]] = UseSingleCache(0, "api")
 
     PLUGIN_CHOICE_LIST = (
-        (0, "토큰을 검사하지 않습니다"),
+        (0, "No auth"),
         (1, "Basic auth"),
         (2, "Key auth"),
-        (3, "게이트웨이에서 토큰을 검사합니다. 어드민 만 접근가능합니다."),
+        (3, "Admin only."),
     )
 
     name = models.CharField(max_length=128, unique=True)
     request_path = models.CharField(max_length=255)
     wrapped_path = models.CharField(max_length=255)
-    upstream = models.ForeignKey(Upstream, on_delete=models.CASCADE)
+    upstream = models.ForeignKey(
+        Upstream, on_delete=models.CASCADE, related_name="api_set"
+    )
     plugin = models.IntegerField(choices=PLUGIN_CHOICE_LIST, default=0)
     consumers = models.ManyToManyField(Consumer, blank=True)
 
-    method_map: dict[str, Callable[..., requests.Response]] = {
-        "get": requests.get,
-        "post": requests.post,
-        "put": requests.put,
-        "patch": requests.patch,
-        "delete": requests.delete,
-    }
+    method_map = method_map
     # unix_session: requests_unixsocket.Session
 
     # @property
@@ -324,7 +272,6 @@ class Api(models.Model):
         full_path = /programs/1/data/
         """
         trailing_path = request.get_full_path().removeprefix(self.request_path)
-        url = self.full_path + trailing_path
         method = request.method or "get"
         method = method.lower()
 
@@ -337,9 +284,9 @@ class Api(models.Model):
             headers["content-type"] = request.content_type
         else:
             data = request.data
-
-        resp = self.method_map[method](
-            url, headers=headers, data=data, files=request.FILES
+        # try:
+        resp = self.upstream.send_request(
+            self, trailing_path, method, headers, data, request.FILES
         )
         if resp.status_code in [400, 404]:
             try:
@@ -347,6 +294,10 @@ class Api(models.Model):
             except:
                 return resp
         return resp
+        # except requests.exceptions.ConnectionError:
+        #     raise TimeoutException
+        # except:
+        #     raise GenericException
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
@@ -364,7 +315,7 @@ class Api(models.Model):
         return self.name
 
     def __str__(self):
-        return f"{self.name} : {self.upstream}{self.request_path}"
+        return f"{self.name}"
 
     def get(self, __name: str):
         return self.__getattribute__(__name)

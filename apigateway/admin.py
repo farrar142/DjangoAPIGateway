@@ -8,26 +8,77 @@ from django.shortcuts import redirect, get_object_or_404
 
 from .models import Api, Consumer, Upstream, Target
 
+from django.urls import reverse
+from django.utils.safestring import mark_safe
+
+
+class BaseTabluarInline(admin.TabularInline):
+    show_change_link = True
+    can_delete = False
+    extra = 0
+
+
+class TargetInline(BaseTabluarInline):
+    model = Target
+
+    fields = ("scheme", "host", "weight", "enabled", "toggle")
+    readonly_fields = ("toggle",)
+
+    def toggle(self, obj: Target):
+        str(obj)
+        text = "Deactivate" if obj.enabled else "Activate"
+        url = reverse(
+            "admin:admin_toggle_enabled",
+            args=[obj.pk],
+        )
+        return mark_safe(f'<a href="{url}">{text}</a>')
+
+
+class APIInline(BaseTabluarInline):
+    model = Api
+    exclude = ("consumers",)
+    ordering = ("plugin", "request_path")
+
+    # def view(self, obj: Api):
+    #     url = reverse(
+    #         "admin:%s_%s_change" % (obj._meta.app_label, obj._meta.model_name),
+    #         args=[obj.pk],
+    #     )
+    #     return mark_safe('<a href="%s">View</a>' % (url,))
+
 
 class APIAdmin(admin.ModelAdmin):
     ordering = ("upstream", "request_path")
     list_filter = ("upstream", "plugin")
-
-
-class TargetInline(admin.TabularInline):
-    model = Target
+    list_per_page = 10
 
 
 class UpstreamAdmin(admin.ModelAdmin):
-    inlines = [
-        TargetInline,
-    ]
+    inlines = [TargetInline, APIInline]
     readonly_fields = ("total_weight",)
-    fields = ("total_weight", "alias", "host", "scheme", "weight", "load_balance")
+    search_fields = ("alias",)
+    fields = (
+        "total_weight",
+        "alias",
+        "host",
+        "scheme",
+        "weight",
+        "load_balance",
+        "retries",
+        "timeout",
+    )
+    list_display = ("__str__", "total_apis", "total_targets")
+    list_per_page = 10
 
     def get_queryset(self, request):
+        from django.db import models
+
         queryset = super(UpstreamAdmin, self).get_queryset(request)
-        queryset = queryset.prefetch_related("targets")
+        queryset = (
+            queryset.prefetch_related("targets", "api_set", "api_set__consumers")
+            .annotate(apis_count=models.Count("api_set"))
+            .order_by("-apis_count")
+        )
         return queryset
 
     def __init__(self, model, admin_site) -> None:
@@ -70,8 +121,8 @@ class TargetAdmin(admin.ModelAdmin):
 
 
 # Register your models here.
+admin.site.register(Upstream, UpstreamAdmin)
 admin.site.register(Api, APIAdmin)
 admin.site.register(Consumer)
 # admin.site.register(Upstream)
-admin.site.register(Upstream, UpstreamAdmin)
 admin.site.register(Target, TargetAdmin)
