@@ -49,7 +49,7 @@ class Consumer(models.Model):
 class Upstream(LoadBalancer):
     alias = models.CharField(max_length=64, default="", unique=True)
     retries = models.PositiveIntegerField(default=0)
-    timeout = models.PositiveIntegerField(default=0)
+    timeout = models.PositiveIntegerField(default=10)
 
     targets: models.Manager["Target"]
     api_set: models.Manager["Api"]
