@@ -117,3 +117,17 @@ services:
       - '${PORT}:8000'
     cpu_count: 2
     mem_limit: 512m
+
+  redis:
+    image: redis:latest
+    command: redis-server --port 6379 --appendonly yes
+    container_name: ${CONTAINER_NAME}_redis
+    hostname: root
+    labels:
+      - 'name=redis'
+      - 'mode=standalone'
+    ports:
+      - '${REDIS_PORT}:6379'
+    restart: unless-stopped
+    environment:
+      TZ: 'Asia/Seoul'
