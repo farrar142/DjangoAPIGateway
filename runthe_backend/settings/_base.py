@@ -107,7 +107,7 @@ DATABASES = {
         "HOST": os.getenv("DB_HOST"),
         "PORT": os.getenv("DB_PORT"),
         "OPTIONS": DB_OPTIONS,
-        "TEST": {"NAME": "auth_test", "MIRROR": "default"},
+        # "TEST": {"NAME": "auth_test", "MIRROR": "default"},
     },
 }
 

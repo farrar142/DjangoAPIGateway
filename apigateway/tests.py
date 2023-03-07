@@ -1,6 +1,9 @@
 import requests
 import time
+import re
+from uuid import uuid4
 from django.db import connection
+from django.conf import settings
 from rest_framework import status
 from rest_framework_simplejwt.tokens import AccessToken
 from runthe_backend.test import TestCase
@@ -42,10 +45,12 @@ class TestApiGateway(TestCase):
         print(resp)
 
     def test_auth_server_authenticate(self):
+        cache.clear()
         resp = self.client.post(
             "/auth/signin/classic",
             {"email": "gksdjf1690@gmail.com", "password": "gksdjf452@"},
         )
+        print(resp.json())
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         print("====")
         print(resp.json())
@@ -61,19 +66,47 @@ class TestApiGateway(TestCase):
         cache.clear()
         for i in range(5):
             self.auth_upstream.targets.create(
-                host="www.naver.com", scheme="https", weight=50
+                host="new.test.palzakspot.com", scheme="https", weight=50
             )
-        settings.DEBUG = True
         for i in range(10):
             resp = self.client.get("/users/")
 
-        # self.auth_upstream.targets.create(
-        #     host="www.naver.com", scheme="https", weight=50
-        # )
-        # for i in range(15):
-        #     self.client.get("/users/")
-
-        # print(self.auth_upstream.weight_round())
+    def test_cached_api(self):
+        stream = Upstream.objects.create(
+            host="new.test.palzakspot.com", scheme=SCHEME, alias=uuid4()
+        )
+        Api.objects.create(
+            name="programs",
+            request_path="/programs",
+            wrapped_path="/programs",
+            upstream=stream,
+            plugin=0,
+        )
+        Api.objects.create(
+            name="audios",
+            request_path="/audios",
+            wrapped_path="/audios",
+            upstream=stream,
+            plugin=0,
+        )
+        cache.clear()
+        settings.DEBUG = True
+        self.client.get("/users/")
+        self.client.get("/users/not_matched")
+        self.client.get("/audios/")
+        self.client.get("/audios/me/")
+        self.assertEqual(cache.get("cache_hit"), 2)
+        cache.clear()
+        api_cache = UseSingleCache(0, "api")
+        for api in Api.objects.prefetch_related(
+            "upstream", "upstream__targets"
+        ).iterator():
+            api_cache.set(api, 3600, path=api.request_path, upstream=api.upstream.pk)
+        self.client.get("/users/")
+        self.client.get("/users/not_matched")
+        self.client.get("/audios/")
+        self.client.get("/audios/me/")
+        self.assertEqual(cache.get("cache_hit"), 4)
 
     def test_cache(self):
         cache.clear()

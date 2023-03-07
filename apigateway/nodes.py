@@ -153,7 +153,7 @@ class LoadBalancer(ServerConnectionRecord, Node):
         data=None,
         files=None,
     ):
-        retries = 0
+        retries = -1
 
         def sender(retries=0) -> requests.Response:
             if self.retries < retries:
@@ -164,7 +164,8 @@ class LoadBalancer(ServerConnectionRecord, Node):
                 return self.method_map[method](
                     url, headers=headers, data=data, files=files, timeout=self.timeout
                 )
-            except:
+            except Exception as e:
+                print("error", e)
                 return sender(retries + 1)
 
         return sender(retries)
