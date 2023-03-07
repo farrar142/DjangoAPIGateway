@@ -160,7 +160,8 @@ class Api(PluginMixin, models.Model):
         headers["Authorization"] = request.META.get("HTTP_AUTHORIZATION")
         if request.FILES is not None and isinstance(request.FILES, dict):
             for k, v in request.FILES.items():
-                request.data.pop(k)
+                if request.data.get(k, False):
+                    request.data.pop(k)
 
         if request.content_type and request.content_type.lower() == "application/json":
             data = json.dumps(request.data)
