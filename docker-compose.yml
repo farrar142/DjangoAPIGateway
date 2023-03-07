@@ -127,7 +127,7 @@ services:
       - 'name=redis'
       - 'mode=standalone'
     ports:
-      - '${REDIS_PORT}:6379'
+      - '${REDIS_PORT:-6379}:6379'
     restart: unless-stopped
     environment:
       TZ: 'Asia/Seoul'
