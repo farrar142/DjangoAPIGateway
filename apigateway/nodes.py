@@ -45,7 +45,11 @@ class ServerConnectionRecord:
 
     def decr_conn(self):
         # 현재 업스트림에 연결돈 커넥션 수를 감소시킵니다
-        return cache.decr(self.conn_key, 1)
+        try:
+            cache.add(self.conn_key, 1)
+            return cache.decr(self.conn_key, 1)
+        except:
+            return 0
 
 
 class Node(models.Model):
