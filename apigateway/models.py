@@ -199,7 +199,7 @@ class Api(models.Model):
         (3, "Admin only."),
     )
 
-    name = models.CharField(max_length=128, unique=True)
+    name = models.CharField(max_length=128)
     request_path = models.CharField(max_length=255)
     wrapped_path = models.CharField(max_length=255)
     upstream = models.ForeignKey(
