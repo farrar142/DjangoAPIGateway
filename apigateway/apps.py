@@ -1,3 +1,4 @@
+from threading import Thread
 from django.apps import AppConfig
 from common_module.caches import UseSingleCache
 
@@ -18,4 +19,5 @@ class ApigatewayConfig(AppConfig):
     name = "apigateway"
 
     def ready(self) -> None:
-        warm_cache()
+        thread = Thread(target=warm_cache)
+        thread.start()
