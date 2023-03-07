@@ -155,12 +155,14 @@ class Api(PluginMixin, models.Model):
         method = request.method or "get"
         return method.lower()
 
-    def process_request(self, request: MockRequest):
+    def process_headers(self, request: MockRequest):
         headers = {}
-        headers["X-Forwarded-For"] = request.headers.get("X-Forwarded-For", None)
         headers["Host"] = request.headers.get("Host", None)
         headers["Authorization"] = request.META.get("HTTP_AUTHORIZATION")
         headers["content-type"] = request.content_type
+        return headers
+
+    def process_data(self, request: MockRequest):
         if request.FILES is not None and isinstance(request.FILES, dict):
             for k, v in request.FILES.items():
                 if request.data.get(k, False):
@@ -170,7 +172,7 @@ class Api(PluginMixin, models.Model):
             data = json.dumps(request.data)
         else:
             data = request.data
-        return headers, data
+        return data
 
     def show_errors(self, resp: requests.Response):
         if resp.status_code in [400, 404, 409]:
@@ -187,7 +189,8 @@ class Api(PluginMixin, models.Model):
         """
         trailing_path = self.get_trailing_path(request)
         method = self.get_method(request)
-        headers, data = self.process_request(request)
+        headers = self.process_headers(request)
+        data = self.process_data(request)
         resp = self.upstream.send_request(
             self, trailing_path, method, headers, data, request.FILES
         )
