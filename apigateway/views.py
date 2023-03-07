@@ -1,3 +1,4 @@
+from time import perf_counter
 import requests
 from typing import Generic, Optional, List
 from django.db.models import F, Value, QuerySet
@@ -50,26 +51,14 @@ class gateway(APIView):
             return Response(msg, status=_status)
         with api_cache:
             res = api_cache.send_request(request)
-            if res.headers.get("Content-Type", "").lower() == "application/json":
-                data = res.json()
-            elif res.headers.get("Content-Type", "").lower() == "text/html":
-                return HttpResponse(
-                    content=res.content,
-                    status=res.status_code,
-                    content_type="text/html",
-                )
-            else:
-                return HttpResponse(
-                    content=res.content,
-                    status=res.status_code,
-                    content_type=res.headers.get("Content-Type", "").lower(),
-                )
 
-            # else:
-            #     data = res.content
             if res.status_code == 204:
                 return Response(status=res.status_code)
-            return Response(data=data, status=res.status_code)
+            return HttpResponse(
+                content=res.content,
+                status=res.status_code,
+                content_type=res.headers.get("Content-Type", "").lower(),
+            )
 
     def get(self, request):
         return self.operation(request)

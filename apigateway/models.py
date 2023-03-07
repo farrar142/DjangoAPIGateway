@@ -157,7 +157,10 @@ class Api(PluginMixin, models.Model):
 
     def process_request(self, request: MockRequest):
         headers = {}
+        headers["X-Forwarded-For"] = request.headers.get("X-Forwarded-For", None)
+        headers["Host"] = request.headers.get("Host", None)
         headers["Authorization"] = request.META.get("HTTP_AUTHORIZATION")
+        headers["content-type"] = request.content_type
         if request.FILES is not None and isinstance(request.FILES, dict):
             for k, v in request.FILES.items():
                 if request.data.get(k, False):
@@ -165,7 +168,6 @@ class Api(PluginMixin, models.Model):
 
         if request.content_type and request.content_type.lower() == "application/json":
             data = json.dumps(request.data)
-            headers["content-type"] = request.content_type
         else:
             data = request.data
         return headers, data
@@ -185,7 +187,6 @@ class Api(PluginMixin, models.Model):
         """
         trailing_path = self.get_trailing_path(request)
         method = self.get_method(request)
-        self.process_request(request)
         headers, data = self.process_request(request)
         resp = self.upstream.send_request(
             self, trailing_path, method, headers, data, request.FILES
@@ -215,10 +216,10 @@ class Api(PluginMixin, models.Model):
         return self.__getattribute__(__name)
 
     def __enter__(self):
-        con = self.upstream.incr_conn()
-        print(f"{self.upstream} conn count", con)
+        # con = self.upstream.incr_conn()
+        # print(f"{self.upstream} conn count", con)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        con = self.upstream.decr_conn()
+        # con = self.upstream.decr_conn()
         return

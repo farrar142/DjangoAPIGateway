@@ -155,12 +155,11 @@ class LoadBalancer(ServerConnectionRecord, Node):
     ):
         retries = 0
 
-        def sender(retries=0):
+        def sender(retries=0) -> requests.Response:
             if self.retries < retries:
                 raise TimeoutException
             try:
                 node = self.load_balancing()
-                print(node.pk)
                 url = node.full_path + api.wrapped_path + trailing_path
                 return self.method_map[method](
                     url, headers=headers, data=data, files=files, timeout=self.timeout
