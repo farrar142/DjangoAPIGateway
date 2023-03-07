@@ -39,6 +39,20 @@ class APIInline(BaseTabluarInline):
     exclude = ("consumers",)
     ordering = ("plugin", "request_path")
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).exclude(plugin=3)
+
+
+class APIAdminInline(BaseTabluarInline):
+    model = Api
+    verbose_name = "admin api"
+    verbose_name_plural = "Admin API"
+    exclude = ("consumers",)
+    ordering = ("plugin", "request_path")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(plugin=3)
+
     # def view(self, obj: Api):
     #     url = reverse(
     #         "admin:%s_%s_change" % (obj._meta.app_label, obj._meta.model_name),
@@ -54,7 +68,7 @@ class APIAdmin(admin.ModelAdmin):
 
 
 class UpstreamAdmin(admin.ModelAdmin):
-    inlines = [TargetInline, APIInline]
+    inlines = [TargetInline, APIInline, APIAdminInline]
     readonly_fields = ("total_weight",)
     search_fields = ("alias",)
     fields = (
@@ -67,7 +81,7 @@ class UpstreamAdmin(admin.ModelAdmin):
         "retries",
         "timeout",
     )
-    list_display = ("__str__", "total_apis", "total_targets")
+    list_display = ("__str__", "retries", "timeout", "total_apis", "total_targets")
     list_per_page = 10
 
     def get_queryset(self, request):
