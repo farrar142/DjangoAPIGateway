@@ -1,9 +1,11 @@
+import requests
 from itertools import accumulate
 from random import randint
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar, Callable
 from django.db import models
 
 from common_module.caches import cache
+from common_module.exceptions import TimeoutException
 
 if TYPE_CHECKING:
     from .models import Api
@@ -87,7 +89,19 @@ class LoadBalancer(ServerConnectionRecord, Node):
         default=LoadBalancingType.ROUND_ROBIN,
         choices=LoadBalancingType.choices,
     )
-    targets: models.Manager["TCNode"]
+
+    retries = models.PositiveIntegerField(default=0)
+    timeout = models.PositiveIntegerField(default=10)
+
+    targets: models.Manager["TCNode"]  # type:ignore
+
+    method_map: dict[str, Callable[..., requests.Response]] = {
+        "get": requests.get,
+        "post": requests.post,
+        "put": requests.put,
+        "patch": requests.patch,
+        "delete": requests.delete,
+    }
 
     @property
     def req_key(self):
@@ -106,10 +120,6 @@ class LoadBalancer(ServerConnectionRecord, Node):
     def weight_round(
         self, req_count: int, targets: list["TNode"], target_count: int
     ) -> Node:
-        """
-        100,50,200 가중치를
-        100 150 250 구간으로 나눔
-        """
         max = sum(map(lambda x: x.weight, targets))
         accs = accumulate(map(lambda x: x.weight, targets))
         zipped = list(zip(accs, targets))
@@ -133,3 +143,29 @@ class LoadBalancer(ServerConnectionRecord, Node):
         if self.load_balance == LoadBalancingType.WEIGHT_ROBIN:
             func = self.weight_round
         return func(req_count, targets, target_count)
+
+    def send_request(
+        self,
+        api: "Api",
+        trailing_path: str,
+        method: str,
+        headers=None,
+        data=None,
+        files=None,
+    ):
+        retries = 0
+
+        def sender(retries=0):
+            if self.retries < retries:
+                raise TimeoutException
+            try:
+                node = self.load_balancing()
+                print(node.pk)
+                url = node.full_path + api.wrapped_path + trailing_path
+                return self.method_map[method](
+                    url, headers=headers, data=data, files=files, timeout=self.timeout
+                )
+            except:
+                return sender(retries + 1)
+
+        return sender(retries)

@@ -6,7 +6,8 @@ from django.shortcuts import redirect, get_object_or_404
 
 # Register your models here.
 
-from .models import Api, Consumer, Upstream, Target
+from .models import Api, Upstream, Target
+from .plugins import Consumer
 
 from django.urls import reverse
 from django.utils.safestring import mark_safe

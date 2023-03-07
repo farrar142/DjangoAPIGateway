@@ -1,27 +1,17 @@
 # import requests_unixsocket
 import json
-from itertools import accumulate
-from random import randint
-
-from typing import Any, Callable, Iterable, Optional, Protocol, Self, Type, TypedDict
+from typing import Any, Callable, Self, Type
 
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 from django.utils.html import format_html
 from django.urls import reverse_lazy
-from django.core.cache import cache
 from django.urls import reverse
 import requests
-from rest_framework.authentication import get_authorization_header, BasicAuthentication
-from rest_framework import HTTP_HEADER_ENCODING, exceptions
-from rest_framework.request import Request
-from apigateway.nodes import ChildNode, LoadBalancer, Node
+from apigateway.nodes import ChildNode, LoadBalancer
+from apigateway.plugins import PluginMixin
 
-from common_module.authentication import (
-    InternalJWTAuthentication,
-)
 from common_module.caches import UseSingleCache
-from common_module.exceptions import GenericException, TimeoutException
+from common_module.exceptions import TimeoutException
 from common_module.mixins import MockRequest
 
 from .ret_requests import method_map
@@ -34,23 +24,8 @@ class ApiType(models.TextChoices):
     ADMIN = "관리자"
 
 
-class Consumer(models.Model):
-    user_id = models.IntegerField()
-    identifier = models.CharField(max_length=256, default="")
-    apikey = models.CharField(max_length=32)
-
-    def __unicode__(self):
-        return self.user_id
-
-    def __str__(self):
-        return f"{self.user_id}"
-
-
 class Upstream(LoadBalancer):
     alias = models.CharField(max_length=64, default="", unique=True)
-    retries = models.PositiveIntegerField(default=0)
-    timeout = models.PositiveIntegerField(default=10)
-
     targets: models.Manager["Target"]
     api_set: models.Manager["Api"]
 
@@ -76,15 +51,6 @@ class Upstream(LoadBalancer):
         return aggregate + self.weight
 
     total_weight.fget.short_description = "총 가중치"
-
-    method_map: dict[str, Callable[..., requests.Response]] = {
-        "get": requests.get,
-        "post": requests.post,
-        "put": requests.put,
-        "patch": requests.patch,
-        "delete": requests.delete,
-    }
-
     # def initialize_target(self):
     #     keys = list(map(lambda x: x.my_key, self.targets.all()))
     #     key_map = {k: 1 for k in keys}
@@ -111,32 +77,6 @@ class Upstream(LoadBalancer):
         single_cache = UseSingleCache(0, "api")
         single_cache.purge_by_regex(upstream=self.pk, path="*")
         return result
-
-    def send_request(
-        self,
-        api: "Api",
-        trailing_path: str,
-        method: str,
-        headers=None,
-        data=None,
-        files=None,
-    ):
-        retries = 0
-
-        def sender(retries=0):
-            if self.retries < retries:
-                raise TimeoutException
-            try:
-                node = self.load_balancing()
-                print(node.pk)
-                url = node.full_path + api.wrapped_path + trailing_path
-                return self.method_map[method](
-                    url, headers=headers, data=data, files=files, timeout=self.timeout
-                )
-            except:
-                return sender(retries + 1)
-
-        return sender(retries)
 
 
 class Target(ChildNode):
@@ -189,7 +129,7 @@ class Target(ChildNode):
 """
 
 
-class Api(models.Model):
+class Api(PluginMixin, models.Model):
     cache: UseSingleCache[Type[Self]] = UseSingleCache(0, "api")
 
     PLUGIN_CHOICE_LIST = (
@@ -205,76 +145,19 @@ class Api(models.Model):
     upstream = models.ForeignKey(
         Upstream, on_delete=models.CASCADE, related_name="api_set"
     )
-    plugin = models.IntegerField(choices=PLUGIN_CHOICE_LIST, default=0)
-    consumers = models.ManyToManyField(Consumer, blank=True)
 
     method_map = method_map
-    # unix_session: requests_unixsocket.Session
 
-    # @property
-    # def unix_map(self) -> dict[str, Callable[..., requests.Response]]:
-    #     unix_session = requests_unixsocket.Session()
-    #     self.unix_session = unix_session
-    #     return {
-    #         "get": unix_session.get,
-    #         "post": unix_session.post,
-    #         "patch": unix_session.patch,
-    #         "delete": unix_session.delete,
-    #         "put": unix_session.put,
-    #     }
+    def get_trailing_path(self, request: MockRequest):
+        return request.get_full_path().removeprefix(self.request_path)
 
-    @property
-    def full_path(self):
-        return self.upstream.load_balancing().full_path + self.wrapped_path
-
-    def check_plugin(self, request: MockRequest) -> tuple[bool, str, int]:
-        if self.plugin == 0:
-            return True, "", 200
-
-        elif self.plugin == 1:
-            auth = BasicAuthentication()
-            user: Optional[AbstractBaseUser] = None
-            try:
-                authenticated = auth.authenticate(request)
-                if authenticated:
-                    user, password = authenticated
-            except:
-                return False, "Authentication credentials were not provided", 401
-
-            if user and self.consumers.filter(user=user):
-                return True, "", 200
-            else:
-                return False, "permission not allowed", 403
-        elif self.plugin == 2:
-            apikey = request.META.get("HTTP_APIKEY")
-            consumers = self.consumers.filter(apikey=apikey)
-            if consumers.exists():
-                return True, "", 200
-            return False, "apikey need", 401
-        elif self.plugin == 3:
-            auth = InternalJWTAuthentication()
-            token, _ = auth.authenticate(request)
-            if token != None:
-                if token.role and "staff" in token.role:
-                    return True, "", 200
-            return False, "permission not allowed", 403
-        else:
-            raise NotImplementedError("plugin %d not implemented" % self.plugin)
-
-    def send_request(self, request: MockRequest):
-        headers = {}
-        # if self.plugin != 1 and request.META.get('HTTP_AUTHORIZATION'):
-        headers["Authorization"] = request.META.get("HTTP_AUTHORIZATION")
-        # headers['content-type'] = request.content_type
-        """
-        요청 http://localhost:9000/programs/1/data/
-        strip = /service/programs
-        full_path = /programs/1/data/
-        """
-        trailing_path = request.get_full_path().removeprefix(self.request_path)
+    def get_method(self, request: MockRequest):
         method = request.method or "get"
-        method = method.lower()
+        return method.lower()
 
+    def process_request(self, request: MockRequest):
+        headers = {}
+        headers["Authorization"] = request.META.get("HTTP_AUTHORIZATION")
         if request.FILES is not None and isinstance(request.FILES, dict):
             for k, v in request.FILES.items():
                 request.data.pop(k)
@@ -284,20 +167,30 @@ class Api(models.Model):
             headers["content-type"] = request.content_type
         else:
             data = request.data
-        # try:
-        resp = self.upstream.send_request(
-            self, trailing_path, method, headers, data, request.FILES
-        )
-        if resp.status_code in [400, 404]:
+        return headers, data
+
+    def show_errors(self, resp: requests.Response):
+        if resp.status_code in [400, 404, 409]:
             try:
                 print(resp.json())
             except:
-                return resp
+                pass
+
+    def send_request(self, request: MockRequest):
+        """
+        요청 http://localhost:9000/programs/1/data/
+        strip = /service/programs
+        full_path = /programs/1/data/
+        """
+        trailing_path = self.get_trailing_path(request)
+        method = self.get_method(request)
+        self.process_request(request)
+        headers, data = self.process_request(request)
+        resp = self.upstream.send_request(
+            self, trailing_path, method, headers, data, request.FILES
+        )
+        self.show_errors(resp)
         return resp
-        # except requests.exceptions.ConnectionError:
-        #     raise TimeoutException
-        # except:
-        #     raise GenericException
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
