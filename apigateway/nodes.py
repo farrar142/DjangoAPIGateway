@@ -1,16 +1,16 @@
 import requests
 from itertools import accumulate
 from random import randint
-from typing import TYPE_CHECKING, Generic, TypeVar, Callable
+from typing import TYPE_CHECKING, TypeVar, Callable
+
 from django.db import models
 
-from common_module.caches import cache
-from common_module.exceptions import TimeoutException
+from .consts import SCHEME_DELIMETER
+from .caches import cache
+from .exceptions import TimeoutException
 
 if TYPE_CHECKING:
     from .models import Api
-
-SCHEME_DELIMETER = "://"
 
 
 class SchemeType(models.TextChoices):
@@ -41,12 +41,12 @@ class ServerConnectionRecord:
         return cache.get(self.conn_key, 0)
 
     def incr_conn(self):
-        # 현재 업스트림에 연결돈 커넥션 수를 증가시킵니다
+        # 현재 업스트림에 연결된 커넥션 수를 증가시킵니다
         cache.add(self.conn_key, 0)
         return cache.incr(self.conn_key, 1)
 
     def decr_conn(self):
-        # 현재 업스트림에 연결돈 커넥션 수를 감소시킵니다
+        # 현재 업스트림에 연결된 커넥션 수를 감소시킵니다
         try:
             cache.add(self.conn_key, 1)
             return cache.decr(self.conn_key, 1)
@@ -66,7 +66,7 @@ class Node(models.Model):
 
     @property
     def full_path(self):
-        return self.scheme + SCHEME_DELIMETER + self.host
+        return f"{self.scheme}{SCHEME_DELIMETER}{self.host}"
 
 
 class ChildNode(Node):
@@ -130,7 +130,7 @@ class LoadBalancer(ServerConnectionRecord, Node):
             weight = node[0]
             return rand < weight
 
-        node: tuple[int, Node] = next(filter(find, zipped), (0, self))
+        node = next(filter(find, zipped), (0, self))
         return node[1]
 
     def load_balancing(self) -> Node:

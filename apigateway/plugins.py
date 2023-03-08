@@ -2,9 +2,9 @@ from typing import Callable, Optional, Self
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 
-from rest_framework.authentication import get_authorization_header, BasicAuthentication
+from rest_framework.authentication import BasicAuthentication
 
-from common_module.mixins import MockRequest
+from .wrappers import MockRequest
 from common_module.authentication import (
     InternalJWTAuthentication,
 )

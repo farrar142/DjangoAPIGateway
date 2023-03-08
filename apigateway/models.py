@@ -1,20 +1,17 @@
 # import requests_unixsocket
 import json
-from typing import Any, Callable, Self, Type
+import requests
+from typing import Any, Self, Type
 
 from django.db import models
 from django.utils.html import format_html
 from django.urls import reverse_lazy
-from django.urls import reverse
-import requests
-from apigateway.nodes import ChildNode, LoadBalancer
-from apigateway.plugins import PluginMixin
 
-from common_module.caches import UseSingleCache
-from common_module.exceptions import TimeoutException
-from common_module.mixins import MockRequest
-
+from .nodes import ChildNode, LoadBalancer
+from .plugins import PluginMixin
 from .ret_requests import method_map
+from .caches import UseSingleCache
+from .wrappers import MockRequest
 
 # Create your models here.
 
@@ -92,16 +89,6 @@ class Target(ChildNode):
             reverse_lazy("admin:admin_toggle_enabled", args=[self.pk]),
             text,
         )
-
-    # @property
-    # def my_key(self):
-    #     return f"upstream:{self.upstream_id}-target:{self.pk}-lb"
-
-    # def initialize(self):
-    #     cache.add(self.my_key, 1)
-
-    # def call(self):
-    #     cache.incr(self.my_key, 1)
 
     def to_string(self):
         return self.host

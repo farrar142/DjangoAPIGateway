@@ -5,12 +5,9 @@ from uuid import uuid4
 from django.db import connection
 from django.conf import settings
 from rest_framework import status
-from rest_framework_simplejwt.tokens import AccessToken
 from runthe_backend.test import TestCase
-from common_module.mixins import ServerRequests
-from .models import Api, Upstream, Target
-from common_module.authentication import parse_jwt
-from common_module.caches import UseSingleCache, cache
+from apigateway.models import Api, Upstream, Target
+from apigateway.caches import UseSingleCache, cache
 
 # Create your tests here.
 SCHEME = "https"
