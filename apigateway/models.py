@@ -161,7 +161,6 @@ class Api(PluginMixin, models.Model):
         headers["Host"] = request.headers.get("Host", None)
         headers["Authorization"] = request.META.get("HTTP_AUTHORIZATION")
         headers["Content-Type"] = request.META.get("Content-Type", "application/json")
-        headers["content"]
         return headers
 
     def process_request(self, request: MockRequest):
