@@ -169,7 +169,7 @@ class Api(PluginMixin, models.Model):
                 if request.data.get(k, False):
                     request.data.pop(k)
         if request.content_type and request.content_type.lower() == "application/json":
-            data = request.data
+            data = json.dumps(request.data)
         else:
             data = request.data
         return data
