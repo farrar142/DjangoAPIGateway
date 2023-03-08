@@ -11,14 +11,13 @@ def warm_cache():
     if is_running:
         print("캐싱작업 진행중 태스크를 종료합니다")
         return
-    cache.set("warm_up", True)
+    cache.set("warm_up", True, 120)
     api_cache = UseSingleCache(0, "api")
     for api in Api.objects.prefetch_related("upstream", "upstream__targets").iterator():
         print("set", api)
         api_cache.set(
             api, 3600 * 24 * 30, path=api.request_path, upstream=api.upstream.pk
         )
-    cache.delete("warm_up")
 
 
 class ApigatewayConfig(AppConfig):
