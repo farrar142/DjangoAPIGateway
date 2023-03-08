@@ -26,6 +26,7 @@ DAY = HOUR * 24
 def get_idempotent_key(request: MockRequest):
     key = request.headers.get("Idempotency-Key", None)
     user = request.headers.get("Authorization", "Anon")
+    print(request.headers)
     if key:
         return f"{user}:{request.get_full_path()}:{request.method}:{request.data}:{key}"
     return None
