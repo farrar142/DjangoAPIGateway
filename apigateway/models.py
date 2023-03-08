@@ -160,7 +160,8 @@ class Api(PluginMixin, models.Model):
         headers["X-Forwarded-For"] = request.headers.get("X-Forwarded-For", None)
         headers["Host"] = request.headers.get("Host", None)
         headers["Authorization"] = request.META.get("HTTP_AUTHORIZATION")
-        headers["Content-Type"] = request.META.get("Content-Type", None)
+        if request.content_type and request.content_type.lower() == "application/json":
+            headers["Content-Type"] = request.content_type
         return headers
 
     def process_request(self, request: MockRequest):
