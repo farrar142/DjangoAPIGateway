@@ -33,7 +33,6 @@ class PluginOrder:
     plugins: dict[
         int, Callable[["PluginProcessor", MockRequest], tuple[bool, str, int]]
     ] = dict()
-    done = False
 
     @classmethod
     def plugin_injector(cls, order: int):
@@ -43,8 +42,8 @@ class PluginOrder:
             def wrapper(*args):
                 return func(*args)
 
-            if cls.done:
-                return wrapper
+            # if cls.done:
+            #     return wrapper
 
             cls.plugins[order] = func
 
@@ -92,14 +91,14 @@ class PluginProcessor:
     @PluginOrder.plugin_injector(order=PluginChoices.ADMIN_ONLY)
     def process_admin_auth(self, request: MockRequest):
         auth = InternalJWTAuthentication()
-        token, _ = auth.authenticate(request)
+        user, token = auth.authenticate(request)
         if token != None:
             if token.role and "staff" in token.role:
                 return True, "", 200
         return False, "permission not allowed", 403
 
 
-PluginOrder.done = True
+# PluginOrder.done = True
 
 
 class PluginMixin(models.Model):
