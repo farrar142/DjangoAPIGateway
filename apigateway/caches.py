@@ -45,8 +45,6 @@ class CacheBase:
 
     def purge_by_regex(self, **kwargs):
         key = self.key(kwargs)
-        print("purge by regex")
-        print(key)
         cache.delete_many(cache.keys(key))
 
     def purge_global_key(self):

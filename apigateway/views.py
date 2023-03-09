@@ -47,7 +47,6 @@ def idempotent_wrapper(func: Callable[["gateway", MockRequest], requests.Respons
     def wrapper(view: "gateway", request: MockRequest):
         response: Optional[requests.Response] = None
         key = get_idempotent_key(request)
-        print(f"{key=}")
         if key:
             # 캐시에서 키검색
             response = stack_await_cache_response(key)

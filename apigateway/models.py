@@ -185,7 +185,6 @@ class Api(PluginMixin, models.Model):
         resp = self.upstream.send_request(
             self, trailing_path, method, headers, data, request.FILES
         )
-        print(f"{data=}{headers=}")
         self.show_errors(resp)
         return resp
 

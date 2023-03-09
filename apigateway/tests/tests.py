@@ -49,6 +49,7 @@ class TestApiGateway(TestCase):
         print(resp)
 
     def test_auth_server_authenticate(self):
+        print("start=========================")
         cache.clear()
         resp = self.client.post(
             "/auth/signin/classic",
