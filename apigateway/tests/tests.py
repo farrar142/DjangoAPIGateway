@@ -6,7 +6,7 @@ from django.db import connection
 from django.conf import settings
 from rest_framework import status
 from runthe_backend.test import TestCase
-from apigateway.models import Api, Upstream, Target
+from apigateway.models import Api, Upstream, Target, User
 from apigateway.caches import UseSingleCache, cache
 
 # Create your tests here.
@@ -36,6 +36,13 @@ class TestApiGateway(TestCase):
             upstream=self.auth_upstream,
             plugin=0,
         )
+        self.auth = Api.objects.create(
+            name="admin_users",
+            request_path="/admin/users",
+            wrapped_path="/admin/users",
+            upstream=self.auth_upstream,
+            plugin=3,
+        )
 
     def test_middleware(self):
         resp = self.client.get("/")
@@ -52,9 +59,11 @@ class TestApiGateway(TestCase):
         print("====")
         print(resp.json())
         access_token = resp.json().get("access")
+        self.assertEqual(User.objects.count(), 0)
         self.client.login(access_token)
         # print(f"{AccessToken(access_token)=}")
-        resp = self.client.get("/users/me/")
+        resp = self.client.get("/admin/users/me/")
+        self.assertEqual(User.objects.count(), 1)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
     def test_upstream_round_robin(self):

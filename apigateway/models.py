@@ -6,14 +6,17 @@ from typing import Any, Self, Type
 from django.db import models
 from django.utils.html import format_html
 from django.urls import reverse_lazy
-
+from common_module.models import User as _User
 from .nodes import ChildNode, LoadBalancer
 from .plugins import PluginMixin
 from .ret_requests import method_map
 from .caches import UseSingleCache
 from .wrappers import MockRequest
 
+
 # Create your models here.
+class User(_User):
+    pass
 
 
 class ApiType(models.TextChoices):

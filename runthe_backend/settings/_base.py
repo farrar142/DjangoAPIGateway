@@ -186,3 +186,5 @@ CACHES = {
         },
     }
 }
+
+AUTH_USER_MODEL = "apigateway.User"
