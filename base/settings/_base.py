@@ -32,7 +32,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "random_string")
 # SECRET_KEY = 'django-insecure-g)*y0n*^0k*xy+e2k7i#zf7ymw_(2@kfz5dci&vi11y-=w&%=q'
 
 ALLOWED_HOSTS = []
-
+CSRF_TRUSTED_ORIGINS = ["*"]
 
 # Application definition
 
