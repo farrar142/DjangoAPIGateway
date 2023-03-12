@@ -189,14 +189,14 @@ AUTH_USER_MODEL = "apigateway.User"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "apigateway.authentications.InternalJWTAuthentication",
+        "base.authentications.InternalJWTAuthentication",
     ],
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ],
-    "DEFAULT_PAGINATION_CLASS": "apigateway.paginations.CursorPagination",
+    "DEFAULT_PAGINATION_CLASS": "base.paginations.CursorPagination",
     "PAGE_SIZE": 10,
 }
 

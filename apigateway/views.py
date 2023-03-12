@@ -1,22 +1,18 @@
 import re
 import requests
 import hashlib
-from typing import Callable, Generic, Optional, List, Self
-from django.db.models import F, Value, QuerySet
-from django.http.request import HttpRequest
+from typing import Callable, Optional
+from django.db.models import F, Value
 from django.http.response import HttpResponse
 from django.conf import settings
 
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework import status, viewsets, exceptions
+from rest_framework import status, exceptions
 from rest_framework.views import APIView
-from rest_framework.generics import get_object_or_404
-from apigateway.serializers import UpstreamSerializer
-from .caches import UseSingleCache, cache
-from .exceptions import TimeoutException, ConflictException
-from .wrappers import MockRequest
-from .models import Api, Upstream
+from base.exceptions import TimeoutException, ConflictException
+from base.caches import UseSingleCache, cache
+from base.wrappers import MockRequest
+
+from .models import Api
 
 MINUTE = 60
 HOUR = MINUTE * 60

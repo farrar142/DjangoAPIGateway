@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, TypeVar, Callable
 
 from django.db import models
 
-from .consts import SCHEME_DELIMETER
-from .caches import cache
-from .exceptions import TimeoutException
+from base.consts import SCHEME_DELIMETER
+from base.exceptions import TimeoutException
+from base.caches import cache, UseSingleCache
 
 if TYPE_CHECKING:
     from .models import Api
@@ -66,6 +66,18 @@ class Node(models.Model):
     @property
     def full_path(self):
         return f"{self.scheme}{SCHEME_DELIMETER}{self.host}"
+
+    def save(self, *args, **kwargs) -> None:
+        res = super().save(*args, **kwargs)
+        single_cache = UseSingleCache(0, "api")
+        single_cache.purge_by_regex(upstream=self.pk, path="*")
+        return res
+
+    def delete(self, *args, **kwargs):
+        result = super().delete(*args, **kwargs)
+        single_cache = UseSingleCache(0, "api")
+        single_cache.purge_by_regex(upstream=self.pk, path="*")
+        return result
 
 
 class ChildNode(Node):

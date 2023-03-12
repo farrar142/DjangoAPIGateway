@@ -1,8 +1,8 @@
 from threading import Thread
 from django.apps import AppConfig
 
-from .consts import DAY, MINUTE
-from .caches import cache, UseSingleCache
+from base.consts import DAY, MINUTE
+from base.caches import cache, UseSingleCache
 
 
 def warm_cache():

@@ -1,16 +1,18 @@
-import requests
-import time
-import re
+import os
 from uuid import uuid4
-from django.db import connection
+from dotenv import load_dotenv
+
 from django.conf import settings
 from rest_framework import status
 from base.test import TestCase
 from apigateway.models import Api, Upstream, Target, User
-from apigateway.caches import UseSingleCache, cache
+from base.caches import UseSingleCache, cache
 
+load_dotenv()
 # Create your tests here.
 SCHEME = "https"
+
+AUTH_SERVER = os.getenv("AUTH_SERVER", "http://localhost:9001")
 
 
 class TestApiGateway(TestCase):
@@ -20,7 +22,7 @@ class TestApiGateway(TestCase):
         Upstream.objects.all().delete()
         Api.objects.all().delete()
         self.auth_upstream = Upstream.objects.create(
-            host="new.test.palzakspot.com", scheme=SCHEME, alias="API_GATEWAY"
+            host=AUTH_SERVER, scheme=SCHEME, alias="API_GATEWAY"
         )
         self.auth = Api.objects.create(
             name="auth",
@@ -73,15 +75,13 @@ class TestApiGateway(TestCase):
         cache.clear()
         for i in range(5):
             self.auth_upstream.targets.create(
-                host="new.test.palzakspot.com", scheme="https", weight=50
+                host=AUTH_SERVER, scheme="https", weight=50
             )
         for i in range(10):
             resp = self.client.get("/users/")
 
     def test_cached_api(self):
-        stream = Upstream.objects.create(
-            host="new.test.palzakspot.com", scheme=SCHEME, alias=uuid4()
-        )
+        stream = Upstream.objects.create(host=AUTH_SERVER, scheme=SCHEME, alias=uuid4())
         Api.objects.create(
             name="programs",
             request_path="/programs",

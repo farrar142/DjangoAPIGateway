@@ -144,8 +144,8 @@ class InternalJWTAuthentication(authentication.BaseAuthentication):
             parsed = parse_jwt(jwt)
             try:
                 self.check_exp(parsed)
-                user = get_or_create_user(parsed)
-                return (user, parsed)
+                # user = get_or_create_user(parsed)
+                return (None, parsed)
             except:
                 return (None, None)
         except:

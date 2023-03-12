@@ -19,7 +19,7 @@ from rest_framework import exceptions
 from rest_framework.test import APIClient
 from rest_framework.test import APITestCase
 
-from ..authentications import Token, parse_jwt
+from base.authentications import Token, parse_jwt
 
 
 load_dotenv()
@@ -78,7 +78,7 @@ class Client(APIClient):
     ):
         email = os.getenv(user_type)
         password = os.getenv(pw_type)
-        auth_server = os.getenv("AUTH_SERVER", "new.test.palzakspot.com")
+        auth_server = os.getenv("AUTH_SERVER", "http://localhost:9001")
         resp = requests.post(
             f"{auth_server}/auth/signin/classic",
             data={"email": email, "password": password},

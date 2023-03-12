@@ -7,10 +7,12 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.html import format_html
 from django.urls import reverse_lazy
+
+from base.caches import UseSingleCache
+from base.wrappers import MockRequest
+
 from .nodes import ChildNode, LoadBalancer
 from .plugins import PluginMixin
-from .caches import UseSingleCache
-from .wrappers import MockRequest
 
 
 class User(AbstractUser):
@@ -69,18 +71,6 @@ class Upstream(LoadBalancer):
     def __str__(self):
         return f"{self.alias}"
 
-    def save(self, *args, **kwargs) -> None:
-        res = super().save(*args, **kwargs)
-        single_cache = UseSingleCache(0, "api")
-        single_cache.purge_by_regex(upstream=self.pk, path="*")
-        return res
-
-    def delete(self, *args, **kwargs):
-        result = super().delete(*args, **kwargs)
-        single_cache = UseSingleCache(0, "api")
-        single_cache.purge_by_regex(upstream=self.pk, path="*")
-        return result
-
 
 class Target(ChildNode):
     upstream = models.ForeignKey(
@@ -102,18 +92,6 @@ class Target(ChildNode):
     def __str__(self):
         str(self.upstream.alias)
         return f"{self.scheme}/{self.host} - {self.weight}"
-
-    def save(self, *args, **kwargs) -> None:
-        res = super().save(*args, **kwargs)
-        single_cache = UseSingleCache(0, "api")
-        single_cache.purge_by_regex(upstream=self.upstream_id, path="*")
-        return res
-
-    def delete(self, *args, **kwargs):
-        result = super().delete(*args, **kwargs)
-        single_cache = UseSingleCache(0, "api")
-        single_cache.purge_by_regex(upstream=self.upstream_id, path="*")
-        return result
 
 
 class Api(PluginMixin, models.Model):

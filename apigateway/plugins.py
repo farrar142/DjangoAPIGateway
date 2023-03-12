@@ -4,10 +4,12 @@ from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 
 from rest_framework.authentication import BasicAuthentication
 
-from .wrappers import MockRequest
-from .authentications import (
+from base.authentications import (
     InternalJWTAuthentication,
 )
+
+
+from base.wrappers import MockRequest
 
 
 class Consumer(models.Model):
