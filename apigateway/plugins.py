@@ -31,7 +31,7 @@ class PluginChoices(models.IntegerChoices):
     ADMIN_ONLY = 3
 
 
-class PluginOrder:
+class PluginMap:
     plugins: dict[
         int, Callable[["PluginProcessor", MockRequest], tuple[bool, str, int]]
     ] = dict()
@@ -60,13 +60,13 @@ class PluginProcessor:
         self.request = request
 
     def process(self, plugin: int):
-        return PluginOrder.plugins[plugin](self, self.request)
+        return PluginMap.plugins[plugin](self, self.request)
 
-    @PluginOrder.plugin_injector(order=PluginChoices.NO_AUTH)
+    @PluginMap.plugin_injector(order=PluginChoices.NO_AUTH)
     def process_plugin(self, request: MockRequest):
         return True, "", 200
 
-    @PluginOrder.plugin_injector(order=PluginChoices.BASIC_AUTH)
+    @PluginMap.plugin_injector(order=PluginChoices.BASIC_AUTH)
     def process_basic_auth(self, request: MockRequest):
         auth = BasicAuthentication()
         user: Optional[AbstractBaseUser] = None
@@ -82,7 +82,7 @@ class PluginProcessor:
         else:
             return False, "permission not allowed", 403
 
-    @PluginOrder.plugin_injector(order=PluginChoices.KEY_AUTH)
+    @PluginMap.plugin_injector(order=PluginChoices.KEY_AUTH)
     def process_key_auth(self, request: MockRequest):
         apikey = request.META.get("HTTP_APIKEY")
         consumers = self.plugin_manager.consumers.filter(apikey=apikey)
@@ -90,7 +90,7 @@ class PluginProcessor:
             return True, "", 200
         return False, "apikey need", 401
 
-    @PluginOrder.plugin_injector(order=PluginChoices.ADMIN_ONLY)
+    @PluginMap.plugin_injector(order=PluginChoices.ADMIN_ONLY)
     def process_admin_auth(self, request: MockRequest):
         auth = InternalJWTAuthentication()
         user, token = auth.authenticate(request)
@@ -100,7 +100,7 @@ class PluginProcessor:
         return False, "permission not allowed", 403
 
 
-# PluginOrder.done = True
+# PluginMap.done = True
 
 
 class PluginMixin(models.Model):

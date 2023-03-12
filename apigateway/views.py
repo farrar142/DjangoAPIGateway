@@ -34,7 +34,9 @@ def get_idempotent_key(request: MockRequest):
     return None
 
 
-def stack_await_cache_response(key: str, retries=0) -> Optional[requests.Response]:
+def block_cached_idempotent_response(
+    key: str, retries=0
+) -> Optional[requests.Response]:
     if retries >= 10:
         raise TimeoutException
     response = cache.get(key, None)
@@ -51,7 +53,7 @@ def idempotent_wrapper(func: OPERAION_FUNC):
         key = get_idempotent_key(request)
         if key:
             # 캐시에서 키검색
-            response = stack_await_cache_response(key)
+            response = block_cached_idempotent_response(key)
             if response != None:
                 print("hit idemp")
             if not response:
