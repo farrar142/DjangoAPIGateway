@@ -16,7 +16,6 @@ if TYPE_CHECKING:
 class SchemeType(models.TextChoices):
     HTTP = "http"
     HTTPS = "https"
-    UNITX = "http+unix"
 
 
 class LoadBalancingType(models.TextChoices):

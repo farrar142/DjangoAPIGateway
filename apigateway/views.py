@@ -1,5 +1,6 @@
 import re
 import requests
+import hashlib
 from typing import Callable, Generic, Optional, List, Self
 from django.db.models import F, Value, QuerySet
 from django.http.request import HttpRequest
@@ -12,15 +13,19 @@ from rest_framework import status, viewsets, exceptions
 from rest_framework.views import APIView
 from rest_framework.generics import get_object_or_404
 from apigateway.serializers import UpstreamSerializer
-from common_module.caches import UseSingleCache
-from common_module.exceptions import TimeoutException, ConflictException
-from common_module.mixins import MockRequest, ReadOnlyMixin
-from common_module.caches import cache
+from .caches import UseSingleCache, cache
+from .exceptions import TimeoutException, ConflictException
+from .wrappers import MockRequest
 from .models import Api, Upstream
 
 MINUTE = 60
 HOUR = MINUTE * 60
 DAY = HOUR * 24
+OPERAION_FUNC = Callable[["gateway", MockRequest], requests.Response]
+
+
+def hasher(string: str) -> str:
+    return hashlib.blake2b(string.encode("utf-8")).hexdigest()
 
 
 def get_idempotent_key(request: MockRequest):
@@ -28,7 +33,8 @@ def get_idempotent_key(request: MockRequest):
     user = request.headers.get("Authorization", "Anon")
     content_type = request.headers.get("Content-Type", "application/json")
     if key:
-        return f"{user}:{request.get_full_path()}:{request.method}:{content_type}:{request.data}:{key}"
+        string = f"{user}:{request.get_full_path()}:{request.method}:{content_type}:{request.data}:{key}"
+        return hasher(string)
     return None
 
 
@@ -43,7 +49,7 @@ def stack_await_cache_response(key: str, retries=0) -> Optional[requests.Respons
     return response
 
 
-def idempotent_wrapper(func: Callable[["gateway", MockRequest], requests.Response]):
+def idempotent_wrapper(func: OPERAION_FUNC):
     def wrapper(view: "gateway", request: MockRequest):
         response: Optional[requests.Response] = None
         key = get_idempotent_key(request)
@@ -57,9 +63,19 @@ def idempotent_wrapper(func: Callable[["gateway", MockRequest], requests.Respons
                 cache.set(key, response, timeout=15 * DAY)
         else:
             response = func(view, request)
-        content_type = response.headers.get("Content-Type", "").lower()
+        return response
+
+    return wrapper
+
+
+def http_responser(func: OPERAION_FUNC):
+    def wrapper(view: "gateway", request: MockRequest):
+        response = func(view, request)
+
         if response.status_code == 204:
             return HttpResponse(status=status.HTTP_204_NO_CONTENT)
+
+        content_type = response.headers.get("Content-Type", "").lower()
         return HttpResponse(
             content=response.content,
             status=response.status_code,
@@ -123,6 +139,7 @@ class gateway(APIView):
             err.status_code = _status
             raise err
 
+    @http_responser
     @idempotent_wrapper
     def operation(self, request: MockRequest):
         self.validate_path(request.path_info.split("/"))
@@ -145,7 +162,3 @@ class gateway(APIView):
 
     def delete(self, request):
         return self.operation(request)
-
-
-# router.add_router('/inner', inner)
-# api.add_router("/events", router)

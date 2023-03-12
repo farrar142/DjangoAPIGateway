@@ -1,6 +1,0 @@
-[submodule "common_module"]
-	path = common_module
-	url = git@github.com:team-mypacer/common_module.git
-[submodule "docker"]
-	path = docker
-	url = git@github.com:team-mypacer/py-docker.git

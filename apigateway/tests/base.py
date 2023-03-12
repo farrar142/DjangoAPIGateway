@@ -19,7 +19,7 @@ from rest_framework import exceptions
 from rest_framework.test import APIClient
 from rest_framework.test import APITestCase
 
-from common_module.authentication import Token, parse_jwt
+from ..authentications import Token, parse_jwt
 
 
 load_dotenv()

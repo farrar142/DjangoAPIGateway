@@ -14,7 +14,6 @@ import os
 from glob import glob
 from pathlib import Path
 from dotenv import load_dotenv
-from common_module.settings import *
 
 load_dotenv()
 
@@ -28,7 +27,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = SECRET_KEY
+
+SECRET_KEY = os.getenv("SECRET_KEY", "random_string")
 # SECRET_KEY = 'django-insecure-g)*y0n*^0k*xy+e2k7i#zf7ymw_(2@kfz5dci&vi11y-=w&%=q'
 
 ALLOWED_HOSTS = []
@@ -47,12 +47,10 @@ INSTALLED_APPS = [
     "corsheaders",
     "apigateway",
     "rest_framework",
-    "common_module",
     "eventsourcing_django",
 ]
 
 MIDDLEWARE = [
-    "common_module.middleware.time_checking_middleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -63,7 +61,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "runthe_backend.urls"
+ROOT_URLCONF = "base.urls"
 
 TEMPLATES = [
     {
@@ -81,8 +79,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "runthe_backend.wsgi.application"
-ASGI_APPLICATION = "runthe_backend.asgi.application"
+WSGI_APPLICATION = "base.wsgi.application"
+ASGI_APPLICATION = "base.asgi.application"
 
 
 # Database
@@ -188,3 +186,48 @@ CACHES = {
 }
 
 AUTH_USER_MODEL = "apigateway.User"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apigateway.authentications.InternalJWTAuthentication",
+    ],
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "apigateway.paginations.CursorPagination",
+    "PAGE_SIZE": 10,
+}
+
+SENTRY_DSN = os.getenv("SENTRY_DSN", None)
+
+if SENTRY_DSN is not None:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0,
+        # If you wish to associate users to errors (assuming you are using
+        # django.contrib.auth) you may enable sending PII data.
+        send_default_pii=True,  # type: ignore
+    )
+
+SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", None)
+
+
+# CELERY
+CELERY_ALWAYS_EAGER = True
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ["application/json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Asia/Seoul"
+
+EVENT_BROKER_URL = os.getenv("EVENT_BROKER_URL", "host.docker.internal:9092")

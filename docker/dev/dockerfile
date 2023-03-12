@@ -1,0 +1,10 @@
+ARG PLATFORM
+FROM sandring/gateway:$PLATFORM
+
+RUN apk update
+
+##development
+RUN apk add py3-autopep8 docker docker-compose git openssh
+RUN apk add openrc --no-cache
+RUN rc-update add docker boot
+RUN adduser -u 1000 -G docker -h /home/docker -D docker

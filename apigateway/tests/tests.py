@@ -5,7 +5,7 @@ from uuid import uuid4
 from django.db import connection
 from django.conf import settings
 from rest_framework import status
-from runthe_backend.test import TestCase
+from base.test import TestCase
 from apigateway.models import Api, Upstream, Target, User
 from apigateway.caches import UseSingleCache, cache
 

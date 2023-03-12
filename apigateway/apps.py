@@ -10,7 +10,7 @@ def warm_cache():
 
     is_running = cache.get("warm_up", False)
     if is_running:
-        print("캐싱작업 진행중 태스크를 종료합니다")
+        print("최근에 수행된 캐시 작업이 있습니다.")
         return
     cache.set("warm_up", True, 2 * MINUTE)
     api_cache = UseSingleCache(0, "api")

@@ -1,0 +1,7 @@
+ARG PLATFORM
+FROM sandring/gateway:$PLATFORM
+USER root
+WORKDIR /usr/src/app
+RUN mkdir /tmp/base
+ENV PYTHONUNBUFFERED=0
+COPY . .

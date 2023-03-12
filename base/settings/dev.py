@@ -1,5 +1,5 @@
 from glob import glob
-from runthe_backend.settings._base import *
+from base.settings._base import *
 from dotenv import load_dotenv
 
 load_dotenv()

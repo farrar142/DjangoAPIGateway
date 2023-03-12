@@ -1,22 +1,33 @@
 # import requests_unixsocket
 import json
 import requests
-from typing import Any, Self, Type
+from typing import Any, Callable, Self, Type
 
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 from django.utils.html import format_html
 from django.urls import reverse_lazy
-from common_module.models import User as _User
 from .nodes import ChildNode, LoadBalancer
 from .plugins import PluginMixin
-from .ret_requests import method_map
 from .caches import UseSingleCache
 from .wrappers import MockRequest
 
 
-# Create your models here.
-class User(_User):
-    pass
+class User(AbstractUser):
+    nickname = models.CharField(max_length=150)
+
+    @property
+    def user_id(self):
+        return self.pk
+
+    def __str__(self):
+        return self.username
+
+    def __getitem__(self, key: str, default=None):
+        return getattr(self, key, default)
+
+    def get(self, key: str, default=None):
+        return self.__getitem__(key, default)
 
 
 class ApiType(models.TextChoices):
@@ -33,13 +44,13 @@ class Upstream(LoadBalancer):
     def total_targets(self):
         return self.targets.count() or 1
 
-    total_targets.fget.short_description = "총 노드 수"
+    total_targets.fget.short_description = "Total Node Count"
 
     @property
     def total_apis(self):
         return self.api_set.count()
 
-    total_apis.fget.short_description = "총 API 수"
+    total_apis.fget.short_description = "Total API Route Count"
 
     @property
     def total_weight(self):
@@ -50,15 +61,7 @@ class Upstream(LoadBalancer):
         aggregate = aggregate or 0
         return aggregate + self.weight
 
-    total_weight.fget.short_description = "총 가중치"
-    # def initialize_target(self):
-    #     keys = list(map(lambda x: x.my_key, self.targets.all()))
-    #     key_map = {k: 1 for k in keys}
-    #     cache.set_many(key_map)
-
-    @property
-    def target_keys(self):
-        return f"upstream:{self.pk}-target:*-lb"
+    total_weight.fget.short_description = "Total Weight"
 
     def to_string(self):
         return self.host
@@ -113,12 +116,6 @@ class Target(ChildNode):
         return result
 
 
-"""
-0=서버에 인증 유보
-1=게이트웨이 인증
-"""
-
-
 class Api(PluginMixin, models.Model):
     cache: UseSingleCache[Type[Self]] = UseSingleCache(0, "api")
 
@@ -136,7 +133,13 @@ class Api(PluginMixin, models.Model):
         Upstream, on_delete=models.CASCADE, related_name="api_set"
     )
 
-    method_map = method_map
+    method_map: dict[str, Callable[..., requests.Response]] = {
+        "get": requests.get,
+        "post": requests.post,
+        "put": requests.put,
+        "patch": requests.patch,
+        "delete": requests.delete,
+    }
 
     def get_trailing_path(self, request: MockRequest):
         return request.get_full_path().removeprefix(self.request_path)
@@ -154,7 +157,7 @@ class Api(PluginMixin, models.Model):
             headers["Content-Type"] = request.content_type
         return headers
 
-    def process_request(self, request: MockRequest):
+    def process_data(self, request: MockRequest):
         if request.FILES is not None and isinstance(request.FILES, dict):
             for k, v in request.FILES.items():
                 if request.data.get(k, False):
@@ -173,15 +176,10 @@ class Api(PluginMixin, models.Model):
                 pass
 
     def send_request(self, request: MockRequest):
-        """
-        요청 http://localhost:9000/programs/1/data/
-        strip = /service/programs
-        full_path = /programs/1/data/
-        """
         trailing_path = self.get_trailing_path(request)
         method = self.get_method(request)
         headers = self.process_headers(request)
-        data = self.process_request(request)
+        data = self.process_data(request)
         resp = self.upstream.send_request(
             self, trailing_path, method, headers, data, request.FILES
         )

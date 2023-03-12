@@ -5,7 +5,7 @@ from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 from rest_framework.authentication import BasicAuthentication
 
 from .wrappers import MockRequest
-from common_module.authentication import (
+from .authentications import (
     InternalJWTAuthentication,
 )
 

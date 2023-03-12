@@ -2,7 +2,12 @@
 version: '3.7'
 services:
   dev:
-    image: sandring/runthe:${PLATFORM}-dev
+    build:
+      dockerfile: docker/dev/dockerfile
+      context: .
+      args:
+        CONTAINER_NAME: ${CONTAINER_NAME}
+        PLATFORM: ${PLATFORM}
     command: tail -f /dev/null
     # command: "python3 manage.py runserver 0.0.0.0:8000"
     # command: 'sh docker/dev/run.sh'
@@ -36,8 +41,8 @@ services:
     hostname: root
     volumes:
       - /var/run/celery:/var/run
-      - /home/${USERDIR}/nginx/data/runthe_backend/${CONTAINER_NAME}:/tmp/runthe_backend
-      - /home/${USERDIR}/nginx/data/runthe_backend/${CONTAINER_NAME}/static:/usr/src/app/static
+      - /home/${USERDIR}/nginx/data/${PROJECT_NAME:-base_project}/${CONTAINER_NAME}:/tmp/base
+      - /home/${USERDIR}/nginx/data/${PROJECT_NAME:-base_project}/${CONTAINER_NAME}/static:/usr/src/app/static
     # ports:
     #   - '${PORT}:8000'
     restart: unless-stopped
@@ -84,8 +89,8 @@ services:
     hostname: root
     volumes:
       - /var/run/celery:/var/run
-      - /home/${USERDIR}/nginx/data/runthe_backend/${CONTAINER_NAME}:/tmp/runthe_backend
-      - /home/${USERDIR}/nginx/data/runthe_backend/${CONTAINER_NAME}/static:/usr/src/app/static
+      - /home/${USERDIR}/nginx/data/${PROJECT_NAME:-base_project}/${CONTAINER_NAME}:/tmp/base
+      - /home/${USERDIR}/nginx/data/${PROJECT_NAME:-base_project}/${CONTAINER_NAME}/static:/usr/src/app/static
     # ports:
     #   - '${PORT}:8000'
     restart: unless-stopped
