@@ -148,6 +148,12 @@ AUTH_PASSWORD_VALIDATORS = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_HEADERS = default_headers + [
+    'Idempotency-Key',
+    'idempotency-key'
+]
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
 

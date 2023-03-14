@@ -25,6 +25,7 @@ def hasher(string: str) -> str:
 
 
 def get_idempotent_key(request: MockRequest):
+    print(request.headers)
     key = request.headers.get("Idempotency-Key", None)
     user = request.headers.get("Authorization", "Anon")
     content_type = request.headers.get("Content-Type", "application/json")
