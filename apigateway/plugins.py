@@ -7,6 +7,7 @@ from rest_framework.authentication import BasicAuthentication
 from base.authentications import (
     InternalJWTAuthentication,
 )
+from base.exceptions import TokenExpiredExcpetion
 
 
 from base.wrappers import MockRequest
@@ -93,12 +94,18 @@ class PluginProcessor:
     @PluginMap.plugin_injector(order=PluginChoices.ADMIN_ONLY)
     def process_admin_auth(self, request: MockRequest):
         auth = InternalJWTAuthentication()
-        user, token = auth.authenticate(request)
-        if token != None:
-            if token.role and "staff" in token.role:
-                return True, "", 200
-        return False, "permission not allowed", 403
-
+        try:
+            user, token = auth.authenticate(request)
+            if token != None:
+                if token.role and "staff" in token.role:
+                    return True, "", 200
+                return False, "permission not allowed", 403
+        except TokenExpiredExcpetion:
+            return False, "Token Expired", 422
+        except:
+            pass
+        return False, "permission not allowed", 401
+            
 
 # PluginMap.done = True
 
