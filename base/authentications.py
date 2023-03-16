@@ -136,7 +136,7 @@ class InternalJWTAuthentication(authentication.BaseAuthentication):
             raise exceptions.NotAuthenticated
         claim_time = datetime_from_epoch(claim_value)
         if claim_time <= current_time:
-            raise exceptions.NotAuthenticated
+            raise TokenExpiredExcpetion
 
     def authenticate(self, request: HttpRequest):
         jwt = get_jwt_token_from_dict(request.META)
