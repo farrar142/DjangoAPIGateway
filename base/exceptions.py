@@ -14,3 +14,8 @@ class TimeoutException(exceptions.APIException):
 class GenericException(exceptions.APIException):
     status_code = exceptions.status.HTTP_503_SERVICE_UNAVAILABLE
     default_detail = {"unavailable": ["현재 서비스 이용이 불가합니다."]}
+
+
+class TokenExpiredExcpetion(exceptions.APIException):
+    status_code = exceptions.status.HTTP_422_UNPROCESSABLE_ENTITY
+    default_detail = {"token": ["토큰이 만료되었습니다."]}

@@ -84,7 +84,7 @@ def http_responser(func: OPERAION_FUNC):
 
 
 class gateway(APIView):
-    authentication_classes = ()
+    # authentication_classes = ()
     cache: UseSingleCache[Api] = UseSingleCache(0, "api")
 
     def validate_path(self, path: list[str]):

@@ -9,6 +9,8 @@ from django.http import HttpRequest
 from rest_framework import authentication, exceptions
 from rest_framework.request import Request
 
+from base.exceptions import TokenExpiredExcpetion
+
 from .utils import aware_utcnow, datetime_from_epoch
 
 
@@ -58,7 +60,7 @@ def parse_jwt(access_token: str) -> Token:
         token = jwt.decode(access_token, options={"verify_signature": False})
         return Token(**token)
     except:
-        raise exceptions.NotAuthenticated
+        raise TokenExpiredExcpetion(detail=["잘못된 토큰입니다."])
 
 
 USER_CACHE_KEY = lambda x: f"GATEWAY:user:{x}:cached"
@@ -146,7 +148,11 @@ class InternalJWTAuthentication(authentication.BaseAuthentication):
                 self.check_exp(parsed)
                 # user = get_or_create_user(parsed)
                 return (None, parsed)
+            except TokenExpiredExcpetion as e:
+                raise e
             except:
                 return (None, None)
+        except TokenExpiredExcpetion as e:
+            raise e
         except:
             return (None, None)
