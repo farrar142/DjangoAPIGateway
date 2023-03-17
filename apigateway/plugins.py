@@ -99,7 +99,7 @@ class PluginProcessor:
             if token != None:
                 if token.role and "staff" in token.role:
                     return True, "", 200
-                return False, "permission not allowed", 403
+            return False, "permission not allowed", 403
         except TokenExpiredExcpetion:
             return False, "Token Expired", 422
         except:
