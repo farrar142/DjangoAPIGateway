@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "corsheaders",
     "apigateway",
+    "redirects",
     "rest_framework",
     "eventsourcing_django",
 ]

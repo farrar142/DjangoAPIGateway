@@ -19,7 +19,7 @@ from rest_framework import routers
 
 # from django.conf.urls import url
 from apigateway.views import gateway
-# from redirects.views import RedirectionViewSet
+from redirects.views import RedirectionViewSet
 
 router = routers.DefaultRouter()
 # router.register('redirections',RedirectionViewSet,basename='redirections')
@@ -30,6 +30,6 @@ urlpatterns = [
     path("consul/", include(router.urls)),
     # path('',include(router.urls)),
     # path("", include(router.urls)),
-    # re_path(rf"{RedirectionViewSet.PREFIX}/.*", RedirectionViewSet.as_view()),
+    re_path(rf"{RedirectionViewSet.PREFIX}/.*", RedirectionViewSet.as_view()),
     re_path(r".*", gateway.as_view()),
 ]
