@@ -41,8 +41,8 @@ services:
     hostname: root
     volumes:
       - /var/run/celery:/var/run
-      - /home/${USERDIR}/nginx/data/${PROJECT_NAME:-base_project}/${CONTAINER_NAME}:/tmp/base
-      - /home/${USERDIR}/nginx/data/${PROJECT_NAME:-base_project}/${CONTAINER_NAME}/static:/usr/src/app/static
+      - ${PROJECT_DIR}:/tmp/base
+      - ${PROJECT_DIR}/static:/usr/src/app/static
     # ports:
     #   - '${PORT}:8000'
     restart: unless-stopped
@@ -89,8 +89,8 @@ services:
     hostname: root
     volumes:
       - /var/run/celery:/var/run
-      - /home/${USERDIR}/nginx/data/${PROJECT_NAME:-base_project}/${CONTAINER_NAME}:/tmp/base
-      - /home/${USERDIR}/nginx/data/${PROJECT_NAME:-base_project}/${CONTAINER_NAME}/static:/usr/src/app/static
+      - ${PROJECT_DIR}:/tmp/base
+      - ${PROJECT_DIR}/static:/usr/src/app/static
     # ports:
     #   - '${PORT}:8000'
     restart: unless-stopped
