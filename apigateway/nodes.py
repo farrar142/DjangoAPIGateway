@@ -28,8 +28,8 @@ class LoadBalancingType(models.TextChoices):
 2. 다른 Target으로 Retry기능
 """
 
-
-class ServerConnectionRecord:
+# 연결중인 커넥션의 수를 컨트롤하는 믹스인 클래스
+class ServerConnectionRecorder:
     pk: int
 
     @property
@@ -57,29 +57,34 @@ class Node(models.Model):
     class Meta:
         abstract = True
 
-    host = models.CharField(max_length=255)
+    host = models.CharField(
+        max_length=255
+    )  # ex) 192.168.0.14,localhost,172.17.0.1,host.docker.internal
     scheme = models.CharField(
         max_length=64, choices=SchemeType.choices, default=SchemeType.HTTP
     )
-    weight = models.PositiveIntegerField(default=100)
+    weight = models.PositiveIntegerField(default=100)  # 가중치 기반의 분산 알고리즘에 사용될 가중치
 
     @property
     def full_path(self):
-        return f"{self.scheme}{SCHEME_DELIMETER}{self.host}"
+        return f"{self.scheme}{SCHEME_DELIMETER}{self.host}"  # 해당 노드의 전체 url
 
     def save(self, *args, **kwargs) -> None:
         res = super().save(*args, **kwargs)
         single_cache = UseSingleCache(0, "api")
+        # 해당 모델에 변경이 가해지면 해당 업스트림에 연결된 모든 api 캐시를 삭제
         single_cache.purge_by_regex(upstream=self.pk, path="*")
         return res
 
     def delete(self, *args, **kwargs):
         result = super().delete(*args, **kwargs)
         single_cache = UseSingleCache(0, "api")
+        # 해당 모델에 변경이 가해지면 해당 업스트림에 연결된 모든 api 캐시를 삭제
         single_cache.purge_by_regex(upstream=self.pk, path="*")
         return result
 
 
+# 분산부하의 타겟이 될 노드
 class ChildNode(Node):
     class Meta:
         abstract = True
@@ -91,7 +96,8 @@ TNode = TypeVar("TNode", bound=Node)
 TCNode = TypeVar("TCNode", bound=ChildNode)
 
 
-class LoadBalancer(ServerConnectionRecord, Node):
+# 실제 로드밸런싱을 수행하는 로직을 담은 베이스 클래스
+class LoadBalancer(ServerConnectionRecorder, Node):
     class Meta:
         abstract = True
 
@@ -118,16 +124,20 @@ class LoadBalancer(ServerConnectionRecord, Node):
     def req_key(self):
         return f"upstream:{self.pk}-called"
 
+    # round_robin을 수행하기위해 현재 node가 불린 횟수를 기록
     def call(self):
         cache.add(self.req_key, 0)
         return cache.incr(self.req_key, 1)
 
+    # 모든 노드들을 순차적으로 반환
     def round_robin(
         self, req_count: int, targets: list["TNode"], target_count: int
     ) -> Node:
-        cur_idx = req_count % target_count
-        return targets[cur_idx - 1]
+        cur_idx = req_count % target_count + 1
+        return [*targets, self][cur_idx - 1]
 
+    # 모든 노드들의 가중치를 누적하고 [50, 100, 250, 300] - > [50, 150, 400, 700]
+    # 0~최대 누적값 사이의 랜덤숫자를 생성해 해당 범위에 포함되는 노드를 반환
     def weight_round(
         self, req_count: int, targets: list["TNode"], target_count: int
     ) -> Node:
@@ -144,17 +154,22 @@ class LoadBalancer(ServerConnectionRecord, Node):
         node = next(filter(find, zipped), (0, self))
         return node[1]
 
+    # 실제 로드밸런싱을 수행하는 로직
     def load_balancing(self) -> Node:
         req_count = self.call()
+        # 이미 prefetch_related로 쿼리를 해왔기 때문에 filter를 사용하여 다시 쿼리를 발생시키지 않음
+        # 활성화 되어있는 타겟 노드들만 반환
         targets = list(filter(lambda x: x.enabled, self.targets.all()))
         target_count = len(targets)
         if target_count == 0:
-            return self
+            return self  # 모든 타겟 노드가 비 활성화 상태 일 시 자신을 반환
         func = self.round_robin
         if self.load_balance == LoadBalancingType.WEIGHT_ROBIN:
             func = self.weight_round
         return func(req_count, targets, target_count)
 
+    # API 요청,반환 로직을 수행하는 메서드
+    # retry를 실행하는 메서드
     def send_request(
         self,
         api: "Api",
@@ -167,11 +182,13 @@ class LoadBalancer(ServerConnectionRecord, Node):
         retries = -1
 
         def sender(retries=0) -> requests.Response:
+            # timeout되면 504에러를 반환
             if self.retries < retries:
                 raise TimeoutException
             try:
-                node = self.load_balancing()
+                node = self.load_balancing()  # LB로직을 수행하여 나온 노드를 반환
                 url = node.full_path + api.wrapped_path + trailing_path
+                # 노드의 전체 url과 랩된 주소, 나머지 주소를 결합하여 실제 요청을 보낼 주소를 반환
                 return self.method_map[method](
                     url, headers=headers, data=data, files=files, timeout=self.timeout
                 )
