@@ -29,7 +29,7 @@ class LoadBalancingType(models.TextChoices):
 """
 
 # 연결중인 커넥션의 수를 컨트롤하는 믹스인 클래스
-class ServerConnectionRecorder:
+class ServerConnectionRecord:
     pk: int
 
     @property
@@ -97,7 +97,7 @@ TCNode = TypeVar("TCNode", bound=ChildNode)
 
 
 # 실제 로드밸런싱을 수행하는 로직을 담은 베이스 클래스
-class LoadBalancer(ServerConnectionRecorder, Node):
+class LoadBalancer(ServerConnectionRecord, Node):
     class Meta:
         abstract = True
 
