@@ -13,6 +13,8 @@ load_dotenv()
 SCHEME = "https"
 
 AUTH_SERVER = os.getenv("AUTH_SERVER", "http://localhost:9001")
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL","")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD","")
 
 
 class TestApiGateway(TestCase):
@@ -55,7 +57,7 @@ class TestApiGateway(TestCase):
         cache.clear()
         resp = self.client.post(
             "/auth/signin/classic",
-            {"email": "gksdjf1690@gmail.com", "password": "gksdjf452@"},
+            {"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
         )
         print(resp.json())
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
